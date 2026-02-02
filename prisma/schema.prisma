@@ -21,6 +21,7 @@ model Affiliate {
   links     AffiliateLink[]
   referrals Referral[]
   payouts   Payout[]
+  withdrawals Withdrawal[]
 
   @@index([email])
   @@map("affiliates")
@@ -100,4 +101,29 @@ model Payout {
   @@index([affiliateId])
   @@index([status])
   @@map("payouts")
+}
+
+// Withdrawal model - M-PESA withdrawals with platform fees
+model Withdrawal {
+  id                  String   @id @default(uuid())
+  affiliateId         String
+  requestedAmount     Decimal  @db.Decimal(10, 2) // Amount requested (e.g., 140, 280, 420)
+  platformFee         Decimal  @db.Decimal(10, 2) // Platform fee (30 KES per 140 block)
+  payoutAmount        Decimal  @db.Decimal(10, 2) // Amount sent to affiliate (requestedAmount - platformFee)
+  paystackTransferFee Decimal  @db.Decimal(10, 2) // Transfer fee paid by system (20 or 40 KES)
+  mpesaNumber         String                       // Affiliate's M-PESA phone number
+  status              String   @default("pending") // 'pending', 'processing', 'completed', 'failed'
+  paystackReference   String?  @unique             // Paystack transfer reference ID
+  failureReason       String?                      // Error message if failed
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  // Relations
+  affiliate           Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId])
+  @@index([status])
+  @@index([paystackReference])
+  @@index([createdAt])
+  @@map("withdrawals")
 }

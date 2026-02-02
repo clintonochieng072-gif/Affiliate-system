@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { Menu, X, LayoutDashboard, Package, Users, DollarSign, CreditCard, LogOut } from 'lucide-react'
+import { Menu, X, LayoutDashboard, Package, Users, DollarSign, CreditCard, LogOut, Wallet } from 'lucide-react'
 
 export default function DashboardNav() {
   const [isOpen, setIsOpen] = useState(false)
@@ -15,6 +15,7 @@ export default function DashboardNav() {
     { href: '/dashboard/products', icon: Package, label: 'Products' },
     { href: '/dashboard/referrals', icon: Users, label: 'Referrals' },
     { href: '/dashboard/earnings', icon: DollarSign, label: 'Earnings' },
+    { href: '/dashboard/withdraw', icon: Wallet, label: 'Withdraw' },
     { href: '/dashboard/payouts', icon: CreditCard, label: 'Payouts' },
   ]
 
