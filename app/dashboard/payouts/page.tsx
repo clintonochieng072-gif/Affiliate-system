@@ -35,7 +35,7 @@ export default function PayoutsPage() {
 
     const amount = parseFloat(payoutAmount)
     if (isNaN(amount) || amount < 5000) {
-      setMessage({ type: 'error', text: 'Minimum payout amount is ₦5,000' })
+      setMessage({ type: 'error', text: 'Minimum payout amount is KSh 5,000' })
       return
     }
 
@@ -110,7 +110,7 @@ export default function PayoutsPage() {
             </div>
           </div>
           <p className="text-emerald-100 text-sm">
-            Minimum payout: ₦5,000 • Funds sent via Paystack within 24 hours
+            Minimum payout: KSh 5,000 • Funds sent via Paystack within 24 hours
           </p>
         </div>
 
@@ -124,7 +124,7 @@ export default function PayoutsPage() {
           <form onSubmit={handleRequestPayout} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">
-                Amount (₦)
+                Amount (KSh)
               </label>
               <input
                 type="number"
@@ -132,7 +132,7 @@ export default function PayoutsPage() {
                 step="100"
                 value={payoutAmount}
                 onChange={(e) => setPayoutAmount(e.target.value)}
-                placeholder="Enter amount (min ₦5,000)"
+                placeholder="Enter amount (min KSh 5,000)"
                 className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -167,7 +167,7 @@ export default function PayoutsPage() {
 
             {availableBalance < 5000 && (
               <p className="text-sm text-yellow-400 text-center">
-                You need at least ₦5,000 to request a payout. Current balance: {formatCurrency(availableBalance)}
+                You need at least KSh 5,000 to request a payout. Current balance: {formatCurrency(availableBalance)}
               </p>
             )}
           </form>
@@ -247,7 +247,7 @@ export default function PayoutsPage() {
             Payout Information
           </h3>
           <ul className="space-y-2 text-slate-300 text-sm">
-            <li>• Minimum payout amount is ₦5,000</li>
+            <li>• Minimum payout amount is KSh 5,000</li>
             <li>• Payouts are processed within 24 hours</li>
             <li>• Funds are sent directly to your bank account via Paystack</li>
             <li>• Make sure your bank details are correct in your profile</li>

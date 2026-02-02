@@ -140,7 +140,7 @@ affiliate-system/
 2. **Get Your Referral Link**: After signing in, copy your unique referral link from the dashboard
 3. **Share Your Link**: Share your referral link with potential customers
 4. **Track Performance**: Monitor clicks and conversions in real-time
-5. **Request Payout**: Once you reach the minimum balance (₦5,000), request a payout
+5. **Request Payout**: Once you reach the minimum balance (KSh 5,000), request a payout
 
 ### For Admins
 
@@ -172,7 +172,7 @@ curl -X POST https://your-domain.com/api/conversion \
 - `affiliate_code`: The affiliate's unique code (from URL parameter)
 - `user_id`: Your system's user ID
 - `product_id`: Your product/plan ID
-- `amount`: Commission amount in kobo (for NGN) or smallest currency unit
+- `amount`: Commission amount in cents (for KES) or smallest currency unit
 - `status`: Either "pending" or "completed"
 
 **Response**:
@@ -314,7 +314,7 @@ The app can be deployed to any platform that supports Next.js:
 ## Customization
 
 ### Change Currency
-The system uses Nigerian Naira (NGN) by default. To change:
+The system uses Kenya Shillings (KES) by default. To change:
 1. Update `formatCurrency` in `lib/utils.ts`
 2. Update minimum payout amount in `app/dashboard/page.tsx`
 

@@ -27,7 +27,7 @@ Use this checklist when setting up and customizing your affiliate system.
 - [ ] Sign out works
 
 ## Customization (Optional)
-- [ ] Changed currency from NGN to your currency
+- [x] Changed currency from NGN to KES (Kenya Shillings)
 - [ ] Updated minimum payout amount
 - [ ] Modified commission calculation logic
 - [ ] Added admin role checks

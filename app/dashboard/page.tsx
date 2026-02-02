@@ -111,7 +111,7 @@ export default function DashboardPage() {
                   FEATURED PRODUCT
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-2">Lead Capture System</h2>
-                <p className="text-slate-400">Earn 30% commission (₦3,000 per sale)</p>
+                <p className="text-slate-400">Earn 30% commission (KSh 3,000 per sale)</p>
               </div>
               <div className="text-4xl">📊</div>
             </div>

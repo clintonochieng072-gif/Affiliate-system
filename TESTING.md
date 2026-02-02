@@ -85,7 +85,7 @@ curl -X POST http://localhost:3000/api/conversion \
 ```
 
 **Verify**:
-1. Refresh your dashboard - balance should increase by ₦5,000
+1. Refresh your dashboard - balance should increase by KSh 5,000
 2. Conversion should appear in the table
 3. Check Supabase > conversions table
 
@@ -148,7 +148,7 @@ Invoke-RestMethod -Uri "http://localhost:3000/api/click" -Method POST -Headers $
 
 **Expected Result**: Payout processed and balance deducted
 
-First, ensure you have sufficient balance (≥ ₦5,000):
+First, ensure you have sufficient balance (≥ KSh 5,000):
 
 ```powershell
 $payoutHeaders = @{
@@ -222,7 +222,7 @@ Should return:
 4. **System sends webhook**: Send conversion webhook with affiliate code
 5. **Affiliate sees conversion**: Check dashboard for new conversion
 6. **Balance updates**: Available balance increases
-7. **Request payout**: When balance ≥ ₦5,000
+7. **Request payout**: When balance ≥ KSh 5,000
 
 ## Test 11: Multiple Conversions
 

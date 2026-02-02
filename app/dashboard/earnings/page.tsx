@@ -174,7 +174,7 @@ export default function EarningsPage() {
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-              <span><strong>Minimum Payout:</strong> Request withdrawal when balance reaches ₦5,000</span>
+              <span><strong>Minimum Payout:</strong> Request withdrawal when balance reaches KSh 5,000</span>
             </li>
           </ul>
         </div>

@@ -59,7 +59,7 @@ Authorization: Bearer YOUR_WEBHOOK_SECRET
 |-------|------|----------|-------------|
 | `referrer_id` | string | Yes | The affiliate's referral code (from their referral link) |
 | `user_email` | string | Yes | Email of the user who registered |
-| `amount` | number | Yes | Commission amount in minor units (e.g., kobo for NGN) |
+| `amount` | number | Yes | Commission amount in minor units (e.g., cents for KES) |
 | `reference` | string | Yes | Unique transaction reference (used for idempotency) |
 | `product_slug` | string | No | Product identifier (defaults to "default") |
 | `metadata` | object | No | Additional data to store with the commission |

@@ -46,7 +46,7 @@ Complete dashboard navigation with hamburger menu (mobile responsive):
 
 #### **Payouts** (`/dashboard/payouts`)
 - Available balance display
-- Request payout form (minimum ₦5,000)
+- Request payout form (minimum KSh 5,000)
 - Payout history table with status badges
 - Info section with payout details
 

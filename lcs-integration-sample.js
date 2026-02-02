@@ -189,7 +189,7 @@ async function handleRegistration(req, res) {
   const referralCode = getReferralCode(req);
   
   if (referralCode) {
-    // Commission amount (e.g., 5000 kobo = ₦50)
+    // Commission amount (e.g., 5000 cents = KSh 50)
     const commissionAmount = 5000;
     
     // Generate unique reference

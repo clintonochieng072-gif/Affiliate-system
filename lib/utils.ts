@@ -19,12 +19,12 @@ export function generateAffiliateCode(name: string): string {
 }
 
 /**
- * Format currency amount (Nigerian Naira)
+ * Format currency amount (Kenya Shillings)
  */
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-NG', {
+  return new Intl.NumberFormat('en-KE', {
     style: 'currency',
-    currency: 'NGN',
+    currency: 'KES',
   }).format(amount);
 }
 

@@ -311,7 +311,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:3000/api/conversion" -Method POST -Headers $headers -Body $body
 ```
 
-Check dashboard - balance should increase by ₦5,000.
+Check dashboard - balance should increase by KSh 5,000.
 
 ---
 

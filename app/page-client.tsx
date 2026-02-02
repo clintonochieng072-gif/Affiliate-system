@@ -105,7 +105,7 @@ export default function Home() {
           {/* Stats */}
           <div className="mt-20 grid grid-cols-2 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
             <div className="text-center">
-              <div className="text-4xl font-bold text-green-400 mb-2">₦2.5M+</div>
+              <div className="text-4xl font-bold text-green-400 mb-2">KSh 2.5M+</div>
               <div className="text-slate-400">Paid to Affiliates</div>
             </div>
             <div className="text-center">
@@ -239,7 +239,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">Withdraw Earnings</h3>
                 <p className="text-slate-400">
-                  Request payout when you reach ₦5,000. Get paid instantly.
+                  Request payout when you reach KSh 5,000. Get paid instantly.
                 </p>
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function Home() {
                 </ul>
 
                 <div className="mt-8 p-6 bg-green-500/10 border border-green-500/30 rounded-xl">
-                  <div className="text-3xl font-bold text-green-400 mb-2">Earn ₦3,000</div>
+                  <div className="text-3xl font-bold text-green-400 mb-2">Earn KSh 3,000</div>
                   <div className="text-slate-300">Per successful referral (30% commission)</div>
                 </div>
               </div>
@@ -328,7 +328,7 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-slate-300 mb-6 leading-relaxed">
-                "I've earned over ₦150,000 in just 3 months! The dashboard is so easy to use and payouts are always on time."
+                "I've earned over KSh 150,000 in just 3 months! The dashboard is so easy to use and payouts are always on time."
               </p>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
