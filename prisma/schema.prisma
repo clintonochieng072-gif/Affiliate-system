@@ -1,0 +1,103 @@
+// Prisma schema for Neon PostgreSQL (Serverless)
+// Production-ready for Next.js App Router
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Affiliate model - stores affiliate user information
+model Affiliate {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  
+  // Relations
+  links     AffiliateLink[]
+  referrals Referral[]
+  payouts   Payout[]
+
+  @@index([email])
+  @@map("affiliates")
+}
+
+// Product model - SaaS products available for promotion
+model Product {
+  id            String   @id @default(uuid())
+  slug          String   @unique
+  name          String
+  description   String
+  url           String
+  isHighlighted Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  links         AffiliateLink[]
+
+  @@index([slug])
+  @@index([isHighlighted])
+  @@map("products")
+}
+
+// AffiliateLink model - unique referral links per affiliate per product
+model AffiliateLink {
+  id           String   @id @default(uuid())
+  affiliateId  String
+  productId    String
+  productSlug  String
+  referralCode String   @unique
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  affiliate    Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([affiliateId, productId])
+  @@index([affiliateId])
+  @@index([productId])
+  @@index([referralCode])
+  @@map("affiliate_links")
+}
+
+// Referral model - tracks successful referrals and commissions
+model Referral {
+  id                String   @id @default(uuid())
+  affiliateId       String
+  userEmail         String
+  productSlug       String
+  amountPaid        Decimal  @db.Decimal(10, 2)
+  commissionAmount  Decimal  @db.Decimal(10, 2)
+  paymentReference  String   @unique
+  status            String   @default("pending") // 'pending' or 'paid'
+  createdAt         DateTime @default(now())
+  
+  // Relations
+  affiliate         Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId])
+  @@index([status])
+  @@index([paymentReference])
+  @@index([createdAt])
+  @@map("referrals")
+}
+
+// Payout model - tracks affiliate payouts
+model Payout {
+  id          String   @id @default(uuid())
+  affiliateId String
+  amount      Decimal  @db.Decimal(10, 2)
+  status      String   @default("pending") // 'pending' or 'paid'
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId])
+  @@index([status])
+  @@map("payouts")
+}
