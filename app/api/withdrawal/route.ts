@@ -120,10 +120,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate fees
+    // Example: 280 KES withdrawal
+    // - Blocks: 280 / 140 = 2
+    // - Platform fee: 2 * 30 = 60 KES (STAYS IN SYSTEM)
+    // - Payout to affiliate: 280 - 60 = 220 KES (SENT TO M-PESA)
     const numberOfBlocks = amount / WITHDRAWAL_BLOCK_SIZE
-    const platformFee = numberOfBlocks * PLATFORM_FEE_PER_BLOCK
-    const payoutAmount = amount - platformFee
-    const paystackTransferFee = calculatePaystackTransferFee(payoutAmount)
+    const platformFee = numberOfBlocks * PLATFORM_FEE_PER_BLOCK  // This stays in Paystack account
+    const payoutAmount = amount - platformFee  // This goes to affiliate's M-PESA
+    const paystackTransferFee = calculatePaystackTransferFee(payoutAmount)  // Paid by system
 
     // Create withdrawal record
     const withdrawal = await prisma.withdrawal.create({
@@ -177,6 +181,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Initiate transfer
+    // IMPORTANT: We only send payoutAmount to affiliate, NOT the full requested amount
+    // Platform fee stays in the system's Paystack account
     const transferResponse = await fetch('https://api.paystack.co/transfer', {
       method: 'POST',
       headers: {
@@ -185,9 +191,9 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         source: 'balance',
-        amount: Math.round(payoutAmount * 100), // Convert to cents
+        amount: Math.round(payoutAmount * 100), // Convert to cents - ONLY payout amount, NOT requested amount
         recipient: recipientData.data.recipient_code,
-        reason: `Affiliate commission withdrawal - ${numberOfBlocks} blocks`,
+        reason: `Affiliate commission withdrawal - ${numberOfBlocks} blocks (Platform fee: ${platformFee} KES retained)`,
         reference: withdrawal.id, // Use our withdrawal ID as reference
       }),
     })

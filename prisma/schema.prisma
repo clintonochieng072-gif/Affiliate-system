@@ -104,11 +104,12 @@ model Payout {
 }
 
 // Withdrawal model - M-PESA withdrawals with platform fees
+// Platform fee stays in system's Paystack account - only payoutAmount is transferred
 model Withdrawal {
   id                  String   @id @default(uuid())
   affiliateId         String
-  requestedAmount     Decimal  @db.Decimal(10, 2) // Amount requested (e.g., 140, 280, 420)
-  platformFee         Decimal  @db.Decimal(10, 2) // Platform fee (30 KES per 140 block)
+  requestedAmount     Decimal  @db.Decimal(10, 2) // Total amount requested (e.g., 140, 280, 420)
+  platformFee         Decimal  @db.Decimal(10, 2) // Platform fee retained by system (30 KES per 140 block)
   payoutAmount        Decimal  @db.Decimal(10, 2) // Amount sent to affiliate (requestedAmount - platformFee)
   paystackTransferFee Decimal  @db.Decimal(10, 2) // Transfer fee paid by system (20 or 40 KES)
   mpesaNumber         String                       // Affiliate's M-PESA phone number
