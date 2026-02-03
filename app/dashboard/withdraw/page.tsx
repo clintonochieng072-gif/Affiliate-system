@@ -12,7 +12,7 @@ interface WithdrawalOption {
 }
 
 const WITHDRAWAL_BLOCK = 140 // KES
-const PLATFORM_FEE_PER_BLOCK = 30 // KES
+const PLATFORM_FEE_PER_BLOCK = 20 // KES
 const COMMISSION_PER_REFERRAL = 70 // KES
 
 export default function WithdrawalPage() {
@@ -260,7 +260,7 @@ export default function WithdrawalPage() {
             </button>
 
             {/* Info */}
-            <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl">
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -270,6 +270,7 @@ export default function WithdrawalPage() {
                   <ul className="space-y-1 text-blue-300/80">
                     <li>• Withdrawals must be in multiples of {WITHDRAWAL_BLOCK} KES (2 referrals)</li>
                     <li>• Platform fee: {PLATFORM_FEE_PER_BLOCK} KES per {WITHDRAWAL_BLOCK} KES block</li>
+                    <li>• You receive: {WITHDRAWAL_BLOCK - PLATFORM_FEE_PER_BLOCK} KES per block</li>
                     <li>• Funds arrive in your M-PESA within 5-30 minutes</li>
                     <li>• Transfer fees are covered by the platform</li>
                   </ul>
