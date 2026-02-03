@@ -10,10 +10,14 @@ import { Wallet, CreditCard, AlertCircle, CheckCircle2, Clock } from 'lucide-rea
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
+const PLATFORM_FEE_PER_BLOCK = 30 // KES per 140 block
+const WITHDRAWAL_BLOCK = 140 // KES
+
 export default function PayoutsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [payoutAmount, setPayoutAmount] = useState('')
+  const [mpesaNumber, setMpesaNumber] = useState('')
   const [requesting, setRequesting] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -34,8 +38,13 @@ export default function PayoutsPage() {
     setMessage(null)
 
     const amount = parseFloat(payoutAmount)
-    if (isNaN(amount) || amount < 5000) {
-      setMessage({ type: 'error', text: 'Minimum payout amount is KSh 5,000' })
+    if (isNaN(amount) || amount < 140) {
+      setMessage({ type: 'error', text: 'Minimum withdrawal amount is KSh 140' })
+      return
+    }
+
+    if (amount % 140 !== 0) {
+      setMessage({ type: 'error', text: 'Withdrawal amount must be in multiples of KSh 140' })
       return
     }
 
@@ -44,22 +53,33 @@ export default function PayoutsPage() {
       return
     }
 
+    // Validate M-PESA number
+    const mpesaRegex = /^(?:254|\+254|0)?(7[0-9]{8})$/
+    if (!mpesaRegex.test(mpesaNumber)) {
+      setMessage({ type: 'error', text: 'Invalid M-PESA number. Format: 07XX XXX XXX or +254 7XX XXX XXX' })
+      return
+    }
+
     setRequesting(true)
 
     try {
-      const response = await fetch('/api/payout', {
+      const response = await fetch('/api/withdrawal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({ 
+          requestedAmount: amount,
+          mpesaNumber: mpesaNumber
+        })
       })
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to request payout')
+        throw new Error(data.error || 'Failed to request withdrawal')
       }
 
-      setMessage({ type: 'success', text: 'Payout requested successfully! Funds will be sent within 24 hours.' })
+      setMessage({ type: 'success', text: 'Withdrawal requested successfully! Funds will be sent via M-PESA within 24 hours.' })
       setPayoutAmount('')
+      setMpesaNumber('')
       mutate() // Refresh data
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message })
@@ -110,7 +130,7 @@ export default function PayoutsPage() {
             </div>
           </div>
           <p className="text-emerald-100 text-sm">
-            Minimum payout: KSh 5,000 • Funds sent via Paystack within 24 hours
+            Minimum withdrawal: KSh 140 • Funds sent via M-PESA within 24 hours
           </p>
         </div>
 
@@ -118,7 +138,7 @@ export default function PayoutsPage() {
         <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 mb-8">
           <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
             <CreditCard className="w-6 h-6 text-blue-400" />
-            Request Payout
+            Request Withdrawal
           </h2>
 
           <form onSubmit={handleRequestPayout} className="space-y-4">
@@ -128,15 +148,57 @@ export default function PayoutsPage() {
               </label>
               <input
                 type="number"
-                min="5000"
-                step="100"
+                min="140"
+                step="140"
                 value={payoutAmount}
                 onChange={(e) => setPayoutAmount(e.target.value)}
-                placeholder="Enter amount (min KSh 5,000)"
+                placeholder="Enter amount (min KSh 140, multiples of 140)"
                 className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-2">
+                M-PESA Number
+              </label>
+              <input
+                type="text"
+                value={mpesaNumber}
+                onChange={(e) => setMpesaNumber(e.target.value)}
+                placeholder="07XX XXX XXX or +254 7XX XXX XXX"
+                className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Enter the M-PESA phone number where you want to receive funds
+              </p>
+            </div>
+
+            {/* Fee Breakdown */}
+            {payoutAmount && parseFloat(payoutAmount) >= 140 && parseFloat(payoutAmount) % 140 === 0 && (
+              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-white mb-3">Breakdown</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-slate-300">
+                    <span>Requested Amount:</span>
+                    <span className="font-semibold">{formatCurrency(parseFloat(payoutAmount))}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-300">
+                    <span>Platform Fee:</span>
+                    <span className="font-semibold text-red-400">
+                      -{formatCurrency(Math.floor(parseFloat(payoutAmount) / WITHDRAWAL_BLOCK) * PLATFORM_FEE_PER_BLOCK)}
+                    </span>
+                  </div>
+                  <div className="border-t border-slate-700 pt-2 mt-2 flex justify-between text-white font-bold">
+                    <span>You Receive:</span>
+                    <span className="text-green-400">
+                      {formatCurrency(parseFloat(payoutAmount) - Math.floor(parseFloat(payoutAmount) / WITHDRAWAL_BLOCK) * PLATFORM_FEE_PER_BLOCK)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {message && (
               <div
@@ -159,15 +221,15 @@ export default function PayoutsPage() {
 
             <button
               type="submit"
-              disabled={requesting || availableBalance < 5000}
+              disabled={requesting || availableBalance < 140}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              {requesting ? 'Processing...' : 'Request Payout'}
+              {requesting ? 'Processing...' : 'Request Withdrawal'}
             </button>
 
-            {availableBalance < 5000 && (
+            {availableBalance < 140 && (
               <p className="text-sm text-yellow-400 text-center">
-                You need at least KSh 5,000 to request a payout. Current balance: {formatCurrency(availableBalance)}
+                You need at least KSh 140 to request a withdrawal. Current balance: {formatCurrency(availableBalance)}
               </p>
             )}
           </form>
@@ -244,13 +306,15 @@ export default function PayoutsPage() {
         <div className="mt-8 bg-blue-950/30 border border-blue-500/30 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-blue-400" />
-            Payout Information
+            Withdrawal Information
           </h3>
           <ul className="space-y-2 text-slate-300 text-sm">
-            <li>• Minimum payout amount is KSh 5,000</li>
-            <li>• Payouts are processed within 24 hours</li>
-            <li>• Funds are sent directly to your bank account via Paystack</li>
-            <li>• Make sure your bank details are correct in your profile</li>
+            <li>• Minimum withdrawal amount is KSh 140 (2 referrals)</li>
+            <li>• Withdrawals must be in multiples of KSh 140</li>
+            <li>• Platform fee: KSh 30 per KSh 140 block (you receive KSh 110)</li>
+            <li>• Withdrawals are processed within 24 hours</li>
+            <li>• Funds are sent via M-PESA mobile money transfer</li>
+            <li>• Provide a valid M-PESA number (format: 07XX XXX XXX)</li>
           </ul>
         </div>
       </main>

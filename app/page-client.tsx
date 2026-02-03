@@ -113,8 +113,8 @@ export default function Home() {
               <div className="text-slate-400">Active Affiliates</div>
             </div>
             <div className="text-center col-span-2 md:col-span-1">
-              <div className="text-4xl font-bold text-orange-400 mb-2">30%</div>
-              <div className="text-slate-400">Commission Rate</div>
+              <div className="text-4xl font-bold text-orange-400 mb-2">KSh 70</div>
+              <div className="text-slate-400">Per Referral</div>
             </div>
           </div>
         </div>
@@ -239,7 +239,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">Withdraw Earnings</h3>
                 <p className="text-slate-400">
-                  Request payout when you reach KSh 5,000. Get paid instantly.
+                  Withdraw earnings starting at KSh 140 (2 referrals). Get paid via M-PESA.
                 </p>
               </div>
             </div>
