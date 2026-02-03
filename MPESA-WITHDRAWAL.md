@@ -8,8 +8,8 @@ Complete M-PESA withdrawal system for the affiliate platform with automated comm
 
 - **Per Referral**: 70 KES
 - **Withdrawal Block**: 140 KES (2 referrals minimum)
-- **Platform Fee**: 20 KES per 140 KES block (stays in Paystack)
-- **Affiliate Payout**: 120 KES per 140 KES block (sent to M-PESA)
+- **Platform Fee**: 30 KES per 140 KES block (stays in Paystack)
+- **Affiliate Payout**: 110 KES per 140 KES block (sent to M-PESA)
 - **Transfer Fees**: Paid by system (20 KES for 1-1,500 KES, 40 KES for 1,501-20,000 KES)
 
 ## How It Works
@@ -35,8 +35,8 @@ Complete M-PESA withdrawal system for the affiliate platform with automated comm
 
 **Withdrawal Request: 280 KES**
 - Blocks: 280 ÷ 140 = 2
-- Platform Fee: 2 × 20 = 40 KES
-- Payout to Affiliate: 280 - 40 = **240 KES**
+- Platform Fee: 2 × 30 = 60 KES
+- Payout to Affiliate: 280 - 60 = **220 KES**
 - Transfer Fee (paid by system): 20 KES
 
 ## API Endpoints
@@ -409,8 +409,8 @@ AND createdAt < NOW() - INTERVAL '1 hour';
 |--------|-------|
 | Commission per referral | 70 KES |
 | Minimum withdrawal | 140 KES (2 referrals) |
-| Platform fee | 20 KES per 140 block |
-| Affiliate payout | 120 KES per 140 block |
+| Platform fee | 30 KES per 140 block |
+| Affiliate payout | 110 KES per 140 block |
 | Transfer fee (1-1,500) | 20 KES (paid by system) |
 | Transfer fee (1,501-20,000) | 40 KES (paid by system) |
 | Payout method | M-PESA via Paystack |
@@ -420,8 +420,8 @@ AND createdAt < NOW() - INTERVAL '1 hour';
 
 | Requested | Blocks | Platform Fee | You Receive |
 |-----------|--------|--------------|-------------|
-| 140 KES | 1 | 20 KES | 120 KES |
-| 280 KES | 2 | 40 KES | 240 KES |
-| 420 KES | 3 | 60 KES | 360 KES |
-| 700 KES | 5 | 100 KES | 600 KES |
-| 1,400 KES | 10 | 200 KES | 1,200 KES |
+| 140 KES | 1 | 30 KES | 110 KES |
+| 280 KES | 2 | 60 KES | 220 KES |
+| 420 KES | 3 | 90 KES | 330 KES |
+| 700 KES | 5 | 150 KES | 550 KES |
+| 1,400 KES | 10 | 300 KES | 1,100 KES |

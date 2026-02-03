@@ -12,7 +12,7 @@ interface WithdrawalOption {
 }
 
 const WITHDRAWAL_BLOCK = 140 // KES
-const PLATFORM_FEE_PER_BLOCK = 20 // KES
+const PLATFORM_FEE_PER_BLOCK = 30 // KES
 const COMMISSION_PER_REFERRAL = 70 // KES
 
 export default function WithdrawalPage() {

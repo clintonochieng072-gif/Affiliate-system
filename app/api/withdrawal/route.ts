@@ -8,15 +8,15 @@ import { decimalToNumber } from '@/lib/utils'
  * M-PESA Withdrawal System
  * - 70 KES per referral
  * - Withdrawals in multiples of 140 KES
- * - 20 KES platform fee per 140 block (stays in Paystack)
- * - 120 KES payout per 140 block (sent to affiliate)
+ * - 30 KES platform fee per 140 block (stays in Paystack)
+ * - 110 KES payout per 140 block (sent to affiliate)
  * - Paystack transfer fees: 1-1,500 = 20 KES, 1,501-20,000 = 40 KES (paid by system)
  */
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
 const COMMISSION_PER_REFERRAL = 70 // KES
 const WITHDRAWAL_BLOCK_SIZE = 140 // KES (2 referrals)
-const PLATFORM_FEE_PER_BLOCK = 20 // KES (STAYS IN PAYSTACK ACCOUNT)
+const PLATFORM_FEE_PER_BLOCK = 30 // KES (STAYS IN PAYSTACK ACCOUNT)
 
 /**
  * Calculate Paystack transfer fee based on amount
@@ -123,8 +123,8 @@ export async function POST(request: NextRequest) {
     // Calculate fees
     // Example: 280 KES withdrawal
     // - Blocks: 280 / 140 = 2
-    // - Platform fee: 2 * 20 = 40 KES (STAYS IN SYSTEM)
-    // - Payout to affiliate: 280 - 40 = 240 KES (SENT TO M-PESA)
+    // - Platform fee: 2 * 30 = 60 KES (STAYS IN SYSTEM)
+    // - Payout to affiliate: 280 - 60 = 220 KES (SENT TO M-PESA)
     const numberOfBlocks = amount / WITHDRAWAL_BLOCK_SIZE
     const platformFee = numberOfBlocks * PLATFORM_FEE_PER_BLOCK  // This stays in Paystack account
     const payoutAmount = amount - platformFee  // This goes to affiliate's M-PESA
