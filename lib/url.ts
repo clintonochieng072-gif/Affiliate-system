@@ -15,32 +15,16 @@
  * 5. Fallback to localhost:3000
  */
 export function getBaseUrl(request?: Request): string {
+  // Hardcoded production domain - always use this for referral links
+  const PRODUCTION_DOMAIN = 'https://affiliate.clintonstack.com'
+  
   // 1. Check for explicit NEXT_PUBLIC_SITE_URL (highest priority)
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL
   }
 
-  // 2. Check for VERCEL_URL (auto-set in Vercel deployments)
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
-  }
-
-  // 3. Server-side: derive from request headers
-  if (request) {
-    const host = request.headers.get('host')
-    const protocol = request.headers.get('x-forwarded-proto') || 'http'
-    if (host) {
-      return `${protocol}://${host}`
-    }
-  }
-
-  // 4. Client-side: use window.location
-  if (typeof window !== 'undefined') {
-    return window.location.origin
-  }
-
-  // 5. Fallback to localhost for development
-  return 'http://localhost:3000'
+  // 2. Return hardcoded production domain
+  return PRODUCTION_DOMAIN
 }
 
 /**
@@ -85,7 +69,7 @@ export function isProduction(): boolean {
 export function useBaseUrl(): string {
   if (typeof window === 'undefined') {
     // Server-side rendering fallback
-    return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    return process.env.NEXT_PUBLIC_SITE_URL || 'https://affiliate.clintonstack.com'
   }
   return getBaseUrl()
 }
