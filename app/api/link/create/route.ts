@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { nanoid } from 'nanoid'
+import { getReferralUrl } from '@/lib/url'
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,10 +49,9 @@ export async function POST(request: NextRequest) {
 
     if (existingLink) {
       // Return existing link
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
       return NextResponse.json({
         link: existingLink,
-        referralUrl: `${siteUrl}/r/${existingLink.referralCode}`
+        referralUrl: getReferralUrl(existingLink.referralCode, request)
       })
     }
 
@@ -71,11 +71,9 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-
     return NextResponse.json({
       link,
-      referralUrl: `${siteUrl}/r/${referralCode}`
+      referralUrl: getReferralUrl(referralCode, request)
     })
   } catch (error) {
     console.error('Error creating affiliate link:', error)
