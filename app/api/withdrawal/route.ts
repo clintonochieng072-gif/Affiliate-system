@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     // Validate mobile money number format
     // Accept any reasonable phone number format (9-15 digits)
     // Paystack will do final validation for M-PESA compatibility
-    const cleanedNumber = mpesaNumber.replace(/[\s\-\+]/g, '')
+    const cleanedNumber = mpesaNumber.replace(/\D/g, '')
     
     console.log('🔍 Validating mobile money number:', {
       original: mpesaNumber,

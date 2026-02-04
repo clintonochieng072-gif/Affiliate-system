@@ -58,7 +58,7 @@ export default function PayoutsPage() {
     }
 
     // Validate mobile money number (basic check - Paystack will do final validation)
-    const cleanedMpesa = mpesaNumber.replace(/[\s\-\+]/g, '')
+    const cleanedMpesa = mpesaNumber.replace(/\D/g, '')
     
     // Accept any number with 9-15 digits (covers all African mobile money formats)
     const isValidNumber = /^\d{9,15}$/.test(cleanedMpesa)
