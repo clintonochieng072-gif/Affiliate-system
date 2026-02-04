@@ -157,11 +157,11 @@ export default function PayoutsPage() {
               </label>
               <input
                 type="number"
-                min="140"
-                step="140"
+                min="10"
+                step="10"
                 value={payoutAmount}
                 onChange={(e) => setPayoutAmount(e.target.value)}
-                placeholder="Enter amount (min KSh 140, multiples of 140)"
+                placeholder="Enter 10 (test) or multiples of 140"
                 className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
