@@ -169,9 +169,9 @@ $body = @{
     referral_code = "YOUR_CODE"
     user_email = "test@example.com"
     product_slug = "lead-capture-system"
-    amount_paid = 10000
+    amount_paid = 70
     payment_reference = "PAY_" + (Get-Date -Format "yyyyMMddHHmmss")
-    commission_rate = 0.30
+    commission_rate = 1.0
 } | ConvertTo-Json
 
 Invoke-RestMethod -Uri "http://localhost:3000/api/conversion" -Method POST -Headers $headers -Body $body

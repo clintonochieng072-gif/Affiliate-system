@@ -70,7 +70,7 @@ curl -X POST http://localhost:3000/api/conversion \
     "affiliate_code": "YOUR_CODE_FROM_DASHBOARD",
     "user_id": "test_user_123",
     "product_id": "default-product",
-    "amount": 5000,
+    "amount": 70,
     "status": "completed"
   }'
 ```

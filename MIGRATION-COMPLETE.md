@@ -304,7 +304,7 @@ $body = @{
     affiliate_code = "YOUR_CODE"
     user_id = "test_user_001"
     product_id = "default-product"
-    amount = 5000
+    amount = 70
     status = "completed"
 } | ConvertTo-Json
 

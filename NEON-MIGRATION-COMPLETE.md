@@ -185,9 +185,9 @@ Send POST request to `/api/conversion` when a payment is completed:
   "referral_code": "ABC123XYZ",
   "user_email": "customer@example.com",
   "product_slug": "your-product",
-  "amount_paid": 10000,
+  "amount_paid": 70,
   "payment_reference": "txn_abc123",
-  "commission_rate": 0.20
+  "commission_rate": 1.0
 }
 ```
 

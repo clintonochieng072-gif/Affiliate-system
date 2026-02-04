@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       product_slug, 
       amount_paid, 
       payment_reference,
-      commission_rate = 0.20 // Default 20% commission
+      commission_rate = 1.0 // Default 100% - full amount goes to affiliate (LCS sends commission amount directly)
     } = body
 
     // Validate required fields

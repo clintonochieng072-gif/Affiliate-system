@@ -256,7 +256,7 @@ curl -X POST https://your-domain.com/api/conversion \
     "affiliate_code": "TEST123456",
     "user_id": "user_123",
     "product_id": "prod_456",
-    "amount": 5000,
+    "amount": 70,
     "status": "completed"
   }'
 ```

@@ -131,7 +131,7 @@ curl -X POST http://localhost:3000/api/conversion \
     "affiliate_code": "ABC123456",
     "user_id": "user_123",
     "product_id": "prod_456",
-    "amount": 5000,
+    "amount": 70,
     "status": "completed"
   }'
 ```

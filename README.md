@@ -163,7 +163,7 @@ curl -X POST https://your-domain.com/api/conversion \
     "affiliate_code": "ABC123456",
     "user_id": "user_12345",
     "product_id": "product_67890",
-    "amount": 5000,
+    "amount": 70,
     "status": "completed"
   }'
 ```
@@ -182,7 +182,7 @@ curl -X POST https://your-domain.com/api/conversion \
   "conversion": {
     "id": "uuid",
     "affiliate_id": "uuid",
-    "amount": 5000,
+    "amount": 70,
     "status": "completed",
     "created_at": "2024-01-01T00:00:00Z"
   }

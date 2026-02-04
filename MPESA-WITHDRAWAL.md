@@ -238,7 +238,7 @@ curl -X POST http://localhost:3000/api/commission \
   -d '{
     "affiliate_code": "ABC123456",
     "user_id": "test@example.com",
-    "amount": 10000,
+    "amount": 70,
     "status": "completed"
   }'
 ```

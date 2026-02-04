@@ -157,7 +157,7 @@ const conversion = await prisma.conversion.create({
     affiliateId: affiliate.id,
     productId: 'product-id',
     userId: 'user-123',
-    amount: 5000,
+    amount: 70,
     status: 'completed'
   }
 })
@@ -169,7 +169,7 @@ await prisma.affiliate.update({
   where: { id: affiliateId },
   data: {
     balance: {
-      increment: 5000
+      increment: 70
     }
   }
 })
@@ -235,7 +235,7 @@ $body = @{
     affiliate_code = "ABC123456"
     user_id = "test_user_001"
     product_id = "default-product"
-    amount = 5000
+    amount = 70
     status = "completed"
 } | ConvertTo-Json
 
@@ -251,7 +251,7 @@ curl -X POST http://localhost:3000/api/conversion \
     "affiliate_code": "ABC123456",
     "user_id": "test_user_001",
     "product_id": "default-product",
-    "amount": 5000,
+    "amount": 70,
     "status": "completed"
   }'
 ```

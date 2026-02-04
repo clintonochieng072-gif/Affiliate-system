@@ -47,7 +47,7 @@ $body = @{
     affiliate_code = "JOH123456"
     user_id = "test_user_001"
     product_id = "default-product"
-    amount = 5000
+    amount = 70
     status = "completed"
 } | ConvertTo-Json
 
@@ -63,7 +63,7 @@ curl -X POST http://localhost:3000/api/conversion \
     "affiliate_code": "JOH123456",
     "user_id": "test_user_001",
     "product_id": "default-product",
-    "amount": 5000,
+    "amount": 70,
     "status": "completed"
   }'
 ```
@@ -77,7 +77,7 @@ curl -X POST http://localhost:3000/api/conversion \
     "affiliate_id": "uuid-here",
     "product_id": "default-product",
     "user_id": "test_user_001",
-    "amount": 5000,
+    "amount": 70,
     "status": "completed",
     "created_at": "2024-01-01T00:00:00Z"
   }
@@ -85,7 +85,7 @@ curl -X POST http://localhost:3000/api/conversion \
 ```
 
 **Verify**:
-1. Refresh your dashboard - balance should increase by KSh 5,000
+1. Refresh your dashboard - balance should increase by KSh 70
 2. Conversion should appear in the table
 3. Check Supabase > conversions table
 
@@ -98,7 +98,7 @@ $body = @{
     affiliate_code = "JOH123456"
     user_id = "test_user_002"
     product_id = "default-product"
-    amount = 3000
+    amount = 70
     status = "pending"
 } | ConvertTo-Json
 
@@ -157,7 +157,7 @@ $payoutHeaders = @{
 }
 
 $payoutBody = @{
-    amount = 5000
+    amount = 140
 } | ConvertTo-Json
 
 Invoke-RestMethod -Uri "http://localhost:3000/api/payout" -Method POST -Headers $payoutHeaders -Body $payoutBody
@@ -198,7 +198,7 @@ $body = @{
     affiliate_code = "INVALID999"
     user_id = "test_user_003"
     product_id = "default-product"
-    amount = 2000
+    amount = 70
     status = "completed"
 } | ConvertTo-Json
 
@@ -236,7 +236,7 @@ $codes = @("JOH123456")
         affiliate_code = $codes[0]
         user_id = "test_user_$_"
         product_id = "default-product"
-        amount = (Get-Random -Minimum 1000 -Maximum 10000)
+        amount = 70
         status = "completed"
     } | ConvertTo-Json
     
