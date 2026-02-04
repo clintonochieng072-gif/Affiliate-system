@@ -156,7 +156,7 @@ async function handlePaystackWebhook(req, res) {
       recordCommission(
         referralCode,
         customer.email,
-        amount, // Amount in kobo
+        amount, // Amount in KES (Kenya Shillings)
         reference
       ).catch(error => {
         // Log but don't fail the payment

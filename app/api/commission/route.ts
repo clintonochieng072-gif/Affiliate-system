@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 interface CommissionPayload {
   referrer_id: string       // Affiliate's referral code
   user_email: string         // New user's email
-  amount: number             // Commission amount in minor units (e.g., kobo)
+  amount: number             // Commission amount in KES (Kenya Shillings)
   reference: string          // Unique transaction reference (for idempotency)
   product_slug?: string      // Optional: specific product identifier
   metadata?: Record<string, any> // Optional: additional data

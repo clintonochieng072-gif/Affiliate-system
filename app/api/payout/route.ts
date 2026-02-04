@@ -55,10 +55,10 @@ export async function POST(request: NextRequest) {
     const availableBalance = totalEarnings - totalPayouts
 
     // Validate payout amount
-    const minPayout = 5000 // Minimum 5000 NGN
+    const minPayout = 5000 // Minimum 5000 KES
     if (amount < minPayout) {
       return NextResponse.json(
-        { error: `Minimum payout is ${minPayout} NGN` },
+        { error: `Minimum payout is ${minPayout} KES` },
         { status: 400 }
       )
     }
