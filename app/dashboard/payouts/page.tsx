@@ -60,13 +60,27 @@ export default function PayoutsPage() {
     // Validate mobile money number (basic check - Paystack will do final validation)
     const cleanedMpesa = mpesaNumber.replace(/\D/g, '')
     
+    console.log('🔍 Frontend validation:', {
+      original: mpesaNumber,
+      cleaned: cleanedMpesa,
+      length: cleanedMpesa.length,
+      isValid: /^\d{9,15}$/.test(cleanedMpesa)
+    })
+    
     // Accept any number with 9-15 digits (covers all African mobile money formats)
     const isValidNumber = /^\d{9,15}$/.test(cleanedMpesa)
     
     if (!isValidNumber) {
-      setMessage({ type: 'error', text: 'Invalid account number. Please enter a valid mobile money number (9-15 digits).' })
+      console.error('❌ Frontend validation failed:', {
+        original: mpesaNumber,
+        cleaned: cleanedMpesa,
+        length: cleanedMpesa.length
+      })
+      setMessage({ type: 'error', text: `Invalid account number. Enter 9-15 digits. You entered: ${cleanedMpesa} (${cleanedMpesa.length} digits)` })
       return
     }
+    
+    console.log('✅ Frontend validation passed, sending to API...')
 
     setRequesting(true)
 

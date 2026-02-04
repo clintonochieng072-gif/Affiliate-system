@@ -79,28 +79,49 @@ export async function POST(request: NextRequest) {
     const isValidLength = /^\d{9,15}$/.test(cleanedNumber)
     
     if (!isValidLength) {
-      console.error('❌ Mobile money number validation failed - invalid length or format')
+      console.error('❌ Mobile money number validation failed:', {
+        original: mpesaNumber,
+        cleaned: cleanedNumber,
+        length: cleanedNumber.length,
+        hasOnlyDigits: /^\d+$/.test(cleanedNumber)
+      })
       return NextResponse.json(
-        { error: 'Invalid account number. Please enter a valid mobile money number (9-15 digits).' },
+        { 
+          error: 'Invalid account number. Please enter a valid mobile money number (9-15 digits).', 
+          details: `Received: "${mpesaNumber}" -> Cleaned: "${cleanedNumber}" (${cleanedNumber.length} digits)`,
+          debug: {
+            original: mpesaNumber,
+            cleaned: cleanedNumber,
+            length: cleanedNumber.length
+          }
+        },
         { status: 400 }
       )
     }
     
     console.log('✅ Number format validated, length:', cleanedNumber.length)
 
-    // Format to international format for Kenya if needed
+    // Format for Paystack Kenya M-PESA
+    // IMPORTANT: Paystack M-PESA requires LOCAL format (07XX or 01XX), NOT international (254XX)
     let formattedNumber = cleanedNumber
-    if (/^0[17]\d{8}$/.test(cleanedNumber)) {
-      // 07XXXXXXXX or 01XXXXXXXX -> 254XXXXXXXXX
-      formattedNumber = '254' + cleanedNumber.substring(1)
-      console.log('📱 Formatted Kenyan local to international:', formattedNumber)
+    
+    if (/^254[17]\d{8}$/.test(cleanedNumber)) {
+      // 254XXXXXXXXX -> 0XXXXXXXXX (convert international to local)
+      formattedNumber = '0' + cleanedNumber.substring(3)
+      console.log('📱 Converted international to local format:', formattedNumber)
     } else if (/^[17]\d{8}$/.test(cleanedNumber)) {
-      // 7XXXXXXXX or 1XXXXXXXX -> 254XXXXXXXXX
-      formattedNumber = '254' + cleanedNumber
-      console.log('📱 Formatted Kenyan short to international:', formattedNumber)
+      // 7XXXXXXXX or 1XXXXXXXX -> 07XXXXXXXX or 01XXXXXXXX
+      formattedNumber = '0' + cleanedNumber
+      console.log('📱 Added leading zero:', formattedNumber)
+    } else if (/^0[17]\d{8}$/.test(cleanedNumber)) {
+      // Already in correct format 07XXXXXXXX or 01XXXXXXXX
+      formattedNumber = cleanedNumber
+      console.log('📱 Already in correct local format:', formattedNumber)
     } else {
-      console.log('📱 Using number as-is (has country code or other format):', formattedNumber)
+      console.log('⚠️ Number format may not be Kenyan M-PESA compatible:', formattedNumber)
     }
+    
+    console.log('📞 Final number to send to Paystack:', formattedNumber, '(Length:', formattedNumber.length, ')')
 
     // Get affiliate with paid referrals
     const affiliate = await prisma.affiliate.findUnique({
@@ -201,23 +222,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create transfer recipient first
-    // Note: Paystack mobile money for Kenya M-PESA requires:
-    // 1. Business account verification
-    // 2. Mobile Money feature enabled on your Paystack account
-    // 3. Correct bank code: MPESA for Safaricom M-PESA
+    // Create transfer recipient for M-PESA
+    // Paystack supports M-PESA Kenya with type: 'mobile_money' and bank_code: 'MPESA'
+    // Account number should be in format: 254XXXXXXXXX (12 digits)
     const recipientPayload = {
       type: 'mobile_money',
       name: affiliate.name,
       account_number: formattedNumber,
-      bank_code: 'MPESA', // Paystack's bank code for Safaricom M-PESA Kenya
+      bank_code: 'MPESA',
       currency: 'KES',
     }
 
-    console.log('Creating Paystack recipient:', {
+    console.log('🚀 Creating Paystack recipient:', {
       name: affiliate.name,
       account_number: formattedNumber,
       bank_code: 'MPESA',
+      currency: 'KES',
+      type: 'mobile_money'
     })
 
     const recipientResponse = await fetch('https://api.paystack.co/transferrecipient', {
@@ -231,10 +252,11 @@ export async function POST(request: NextRequest) {
 
     const recipientData = await recipientResponse.json()
 
-    console.log('Paystack recipient response:', {
+    console.log('📥 Paystack recipient response:', {
       status: recipientData.status,
       message: recipientData.message,
       data: recipientData.data,
+      fullResponse: recipientData
     })
 
     if (!recipientData.status) {
