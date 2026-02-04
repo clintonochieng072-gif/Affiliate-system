@@ -57,10 +57,12 @@ export default function PayoutsPage() {
       return
     }
 
-    // Validate M-PESA number
-    const mpesaRegex = /^(?:254|\+254|0)?(7[0-9]{8})$/
-    if (!mpesaRegex.test(mpesaNumber)) {
-      setMessage({ type: 'error', text: 'Invalid M-PESA number. Format: 07XX XXX XXX or +254 7XX XXX XXX' })
+    // Validate mobile money number (accepts 07, 01, and country codes)
+    const cleanedMpesa = mpesaNumber.replace(/[\s\-\+]/g, '')
+    const isValidNumber = /^(0[17]\d{8}|[17]\d{8}|2[0-9]{2}\d{9}|3[0-9]{2}\d{9})$/.test(cleanedMpesa)
+    
+    if (!isValidNumber) {
+      setMessage({ type: 'error', text: 'Invalid account number. Please enter a valid mobile money number.' })
       return
     }
 
@@ -175,12 +177,12 @@ export default function PayoutsPage() {
                 type="text"
                 value={mpesaNumber}
                 onChange={(e) => setMpesaNumber(e.target.value)}
-                placeholder="07XX XXX XXX or +254 7XX XXX XXX"
+                placeholder="07XXXXXXXX, 01XXXXXXXX, or 254XXXXXXXXX"
                 className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
               <p className="text-xs text-slate-500 mt-1">
-                Enter the M-PESA phone number where you want to receive funds
+                Enter your mobile money number (supports 07, 01, and international formats)
               </p>
             </div>
 

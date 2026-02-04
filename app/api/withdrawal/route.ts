@@ -64,23 +64,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate M-PESA number format (Kenyan format: 254XXXXXXXXX or 07XXXXXXXX)
-    const cleanedNumber = mpesaNumber.replace(/\s+/g, '')
-    const isValidFormat = /^(254\d{9}|07\d{8}|7\d{8})$/.test(cleanedNumber)
-    if (!isValidFormat) {
+    // Validate mobile money number format
+    // Accepts: Kenyan (254XXXXXXXXX, 07/01XXXXXXXX) and other African country formats
+    const cleanedNumber = mpesaNumber.replace(/[\s\-\+]/g, '')
+    
+    // Check for valid mobile money formats:
+    // - 254XXXXXXXXX (Kenya with country code)
+    // - 07XXXXXXXX or 01XXXXXXXX (Kenya local)
+    // - 7XXXXXXXX or 1XXXXXXXX (Kenya without leading 0)
+    // - Other African country codes (e.g., 256 for Uganda, 255 for Tanzania, etc.)
+    const isKenyanLocal = /^0[17]\d{8}$/.test(cleanedNumber) // 07 or 01 followed by 8 digits
+    const isKenyanShort = /^[17]\d{8}$/.test(cleanedNumber)  // 7 or 1 followed by 8 digits
+    const hasCountryCode = /^(2[0-9]{2}|3[0-9]{2})\d{9}$/.test(cleanedNumber) // African country codes
+    
+    if (!isKenyanLocal && !isKenyanShort && !hasCountryCode) {
       return NextResponse.json(
-        { error: 'Invalid M-PESA number format. Use 254XXXXXXXXX or 07XXXXXXXX' },
+        { error: 'Invalid account number. Please enter a valid mobile money number.' },
         { status: 400 }
       )
     }
 
-    // Format to 254XXXXXXXXX
+    // Format to international format (254XXXXXXXXX for Kenya)
     let formattedNumber = cleanedNumber
-    if (cleanedNumber.startsWith('0')) {
+    if (isKenyanLocal) {
+      // 07XXXXXXXX or 01XXXXXXXX -> 254XXXXXXXXX
       formattedNumber = '254' + cleanedNumber.substring(1)
-    } else if (cleanedNumber.startsWith('7')) {
+    } else if (isKenyanShort) {
+      // 7XXXXXXXX or 1XXXXXXXX -> 254XXXXXXXXX
       formattedNumber = '254' + cleanedNumber
     }
+    // If already has country code, use as-is
 
     // Get affiliate with paid referrals
     const affiliate = await prisma.affiliate.findUnique({
