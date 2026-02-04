@@ -48,6 +48,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Calculate commission
+    const commissionAmount = amount_paid * commission_rate
+
+    // IMPORTANT: Validate commission amount is 70 KES (or 10 KES for test)
+    if (commissionAmount !== 70 && commissionAmount !== 10) {
+      console.error('⚠️ Invalid commission amount calculated', {
+        amount_paid,
+        commission_rate,
+        commissionAmount,
+        expected: '70 KES or 10 KES (test)',
+      })
+      return NextResponse.json(
+        { error: `Invalid commission amount: ${commissionAmount} KES. Expected 70 KES per referral. Use /api/commission endpoint instead with amount=70` },
+        { status: 400 }
+      )
+    }
+
     // Find affiliate link by referral code
     const affiliateLink = await prisma.affiliateLink.findUnique({
       where: { referralCode: referral_code },
