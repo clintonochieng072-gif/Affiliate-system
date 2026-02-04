@@ -78,9 +78,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate commission
-    const commissionAmount = amount_paid * commission_rate
-
     // Create referral record with transaction safety
     const referral = await prisma.referral.create({
       data: {
