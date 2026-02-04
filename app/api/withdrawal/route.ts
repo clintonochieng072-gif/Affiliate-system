@@ -53,10 +53,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate amount is a multiple of 140
-    if (amount % WITHDRAWAL_BLOCK_SIZE !== 0) {
+    // Validate amount is a multiple of 140 OR the test amount of 10
+    const isTestAmount = amount === 10
+    const isValidMultiple = amount % WITHDRAWAL_BLOCK_SIZE === 0
+    
+    if (!isTestAmount && !isValidMultiple) {
       return NextResponse.json(
-        { error: `Amount must be a multiple of ${WITHDRAWAL_BLOCK_SIZE} KES` },
+        { error: `Amount must be 10 KES (test) or a multiple of ${WITHDRAWAL_BLOCK_SIZE} KES` },
         { status: 400 }
       )
     }
@@ -125,13 +128,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate fees
-    // Example: 280 KES withdrawal
-    // - Blocks: 280 / 140 = 2
-    // - Platform fee: 2 * 30 = 60 KES (STAYS IN SYSTEM)
-    // - Payout to affiliate: 280 - 60 = 220 KES (SENT TO M-PESA)
-    const numberOfBlocks = amount / WITHDRAWAL_BLOCK_SIZE
-    const platformFee = numberOfBlocks * PLATFORM_FEE_PER_BLOCK  // This stays in Paystack account
-    const payoutAmount = amount - platformFee  // This goes to affiliate's M-PESA
+    // For test amount (10 KES): no platform fee, full amount goes to affiliate
+    // For normal withdrawals (140+ multiples): apply platform fee structure
+    let numberOfBlocks: number
+    let platformFee: number
+    let payoutAmount: number
+    
+    if (isTestAmount) {
+      // Test withdrawal: no fees, send full amount
+      numberOfBlocks = 0
+      platformFee = 0
+      payoutAmount = amount
+    } else {
+      // Normal withdrawal: apply fee structure
+      // Example: 280 KES withdrawal
+      // - Blocks: 280 / 140 = 2
+      // - Platform fee: 2 * 30 = 60 KES (STAYS IN SYSTEM)
+      // - Payout to affiliate: 280 - 60 = 220 KES (SENT TO M-PESA)
+      numberOfBlocks = amount / WITHDRAWAL_BLOCK_SIZE
+      platformFee = numberOfBlocks * PLATFORM_FEE_PER_BLOCK
+      payoutAmount = amount - platformFee
+    }
+    
     const paystackTransferFee = calculatePaystackTransferFee(payoutAmount)  // Paid by system
 
     // Create withdrawal record with PENDING status and deduct balance atomically
@@ -150,38 +168,77 @@ export async function POST(request: NextRequest) {
 
     // Send to Paystack Transfers API
     if (!PAYSTACK_SECRET_KEY) {
-      throw new Error('Paystack secret key not configured')
+      await prisma.withdrawal.update({
+        where: { id: withdrawal.id },
+        data: {
+          status: 'failed',
+          failureReason: 'Paystack secret key not configured',
+        },
+      })
+      return NextResponse.json(
+        { error: 'Paystack not configured', details: 'Payment provider configuration missing' },
+        { status: 500 }
+      )
     }
 
     // Create transfer recipient first
+    // Note: Paystack mobile money for Kenya M-PESA requires:
+    // 1. Business account verification
+    // 2. Mobile Money feature enabled on your Paystack account
+    // 3. Correct bank code: MPESA for Safaricom M-PESA
+    const recipientPayload = {
+      type: 'mobile_money',
+      name: affiliate.name,
+      account_number: formattedNumber,
+      bank_code: 'MPESA', // Paystack's bank code for Safaricom M-PESA Kenya
+      currency: 'KES',
+    }
+
+    console.log('Creating Paystack recipient:', {
+      name: affiliate.name,
+      account_number: formattedNumber,
+      bank_code: 'MPESA',
+    })
+
     const recipientResponse = await fetch('https://api.paystack.co/transferrecipient', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        type: 'mobile_money',
-        name: affiliate.name,
-        account_number: formattedNumber,
-        bank_code: 'mpesa', // Paystack's M-PESA code for Kenya
-        currency: 'KES',
-      }),
+      body: JSON.stringify(recipientPayload),
     })
 
     const recipientData = await recipientResponse.json()
 
+    console.log('Paystack recipient response:', {
+      status: recipientData.status,
+      message: recipientData.message,
+      data: recipientData.data,
+    })
+
     if (!recipientData.status) {
+      const errorMessage = recipientData.message || 'Failed to create recipient'
+      
       await prisma.withdrawal.update({
         where: { id: withdrawal.id },
         data: {
           status: 'failed',
-          failureReason: recipientData.message || 'Failed to create recipient',
+          failureReason: errorMessage,
         },
       })
 
+      console.error('Paystack recipient creation failed:', {
+        error: errorMessage,
+        fullResponse: recipientData,
+      })
+
       return NextResponse.json(
-        { error: 'Failed to create transfer recipient', details: recipientData.message },
+        { 
+          error: 'Failed to create transfer recipient', 
+          details: errorMessage,
+          paystackError: recipientData 
+        },
         { status: 400 }
       )
     }

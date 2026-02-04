@@ -38,13 +38,17 @@ export default function PayoutsPage() {
     setMessage(null)
 
     const amount = parseFloat(payoutAmount)
-    if (isNaN(amount) || amount < 140) {
-      setMessage({ type: 'error', text: 'Minimum withdrawal amount is KSh 140' })
+    // Allow 10 KES for testing + multiples of 140 for normal withdrawals
+    const isTestAmount = amount === 10
+    const isValidMultiple = amount >= 140 && amount % 140 === 0
+    
+    if (isNaN(amount) || amount < 10) {
+      setMessage({ type: 'error', text: 'Minimum withdrawal amount is KSh 10' })
       return
     }
 
-    if (amount % 140 !== 0) {
-      setMessage({ type: 'error', text: 'Withdrawal amount must be in multiples of KSh 140' })
+    if (!isTestAmount && !isValidMultiple) {
+      setMessage({ type: 'error', text: 'Withdrawal amount must be KSh 10 (test) or multiples of KSh 140' })
       return
     }
 
@@ -72,9 +76,13 @@ export default function PayoutsPage() {
         })
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to request withdrawal')
+        // Show detailed error information
+        const errorMsg = data.details || data.error || 'Failed to request withdrawal'
+        console.error('Withdrawal error:', data)
+        throw new Error(errorMsg)
       }
 
       setMessage({ type: 'success', text: 'Withdrawal requested successfully! Funds will be sent via M-PESA within 24 hours.' })
@@ -82,6 +90,7 @@ export default function PayoutsPage() {
       setMpesaNumber('')
       mutate() // Refresh data
     } catch (error: any) {
+      console.error('Withdrawal request failed:', error)
       setMessage({ type: 'error', text: error.message })
     } finally {
       setRequesting(false)
@@ -130,7 +139,7 @@ export default function PayoutsPage() {
             </div>
           </div>
           <p className="text-emerald-100 text-sm">
-            Minimum withdrawal: KSh 140 • Funds sent via M-PESA within 24 hours
+            Minimum withdrawal: KSh 10 (test) or KSh 140+ • Funds sent via M-PESA within 24 hours
           </p>
         </div>
 
@@ -221,15 +230,15 @@ export default function PayoutsPage() {
 
             <button
               type="submit"
-              disabled={requesting || availableBalance < 140}
+              disabled={requesting || availableBalance < 10}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {requesting ? 'Processing...' : 'Request Withdrawal'}
             </button>
 
-            {availableBalance < 140 && (
+            {availableBalance < 10 && (
               <p className="text-sm text-yellow-400 text-center">
-                You need at least KSh 140 to request a withdrawal. Current balance: {formatCurrency(availableBalance)}
+                You need at least KSh 10 to request a withdrawal. Current balance: {formatCurrency(availableBalance)}
               </p>
             )}
           </form>
