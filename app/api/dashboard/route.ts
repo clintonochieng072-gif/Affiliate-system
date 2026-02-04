@@ -57,24 +57,24 @@ export async function GET(request: NextRequest) {
       0
     )
 
-    // Calculate total payouts
-    const payouts = await prisma.payout.findMany({
+    // Calculate total withdrawals (completed and processing)
+    const withdrawals = await prisma.withdrawal.findMany({
       where: {
         affiliateId: affiliate.id,
+        status: { in: ['completed', 'processing'] },
       },
       orderBy: {
         createdAt: 'desc',
       },
     })
 
-    const paidPayouts = payouts.filter(p => p.status === 'paid')
-    const totalPayouts = paidPayouts.reduce(
-      (sum, p) => sum + decimalToNumber(p.amount),
+    const totalWithdrawn = withdrawals.reduce(
+      (sum, w) => sum + decimalToNumber(w.requestedAmount),
       0
     )
 
-    // Available balance = total earnings - total payouts
-    const availableBalance = totalEarnings - totalPayouts
+    // Available balance = total earnings - total withdrawals
+    const availableBalance = totalEarnings - totalWithdrawn
 
     // Prepare response
     const response = {
@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
         createdAt: affiliate.createdAt.toISOString(),
       },
       balance: availableBalance,
+      totalEarnings: totalEarnings,
       links: affiliate.links.map(link => ({
         id: link.id,
         productSlug: link.productSlug,
@@ -101,11 +102,14 @@ export async function GET(request: NextRequest) {
         status: r.status,
         createdAt: r.createdAt.toISOString(),
       })),
-      payouts: payouts.map(p => ({
-        id: p.id,
-        amount: decimalToNumber(p.amount),
-        status: p.status,
-        createdAt: p.createdAt.toISOString(),
+      withdrawals: withdrawals.map(w => ({
+        id: w.id,
+        requestedAmount: decimalToNumber(w.requestedAmount),
+        payoutAmount: decimalToNumber(w.payoutAmount),
+        platformFee: decimalToNumber(w.platformFee),
+        mpesaNumber: w.mpesaNumber,
+        status: w.status,
+        createdAt: w.createdAt.toISOString(),
       })),
     }
 
