@@ -68,6 +68,12 @@ export async function POST(request: NextRequest) {
     // Accepts: Kenyan (254XXXXXXXXX, 07/01XXXXXXXX) and other African country formats
     const cleanedNumber = mpesaNumber.replace(/[\s\-\+]/g, '')
     
+    console.log('🔍 Validating mobile money number:', {
+      original: mpesaNumber,
+      cleaned: cleanedNumber,
+      length: cleanedNumber.length,
+    })
+    
     // Check for valid mobile money formats:
     // - 254XXXXXXXXX (Kenya with country code)
     // - 07XXXXXXXX or 01XXXXXXXX (Kenya local)
@@ -77,7 +83,15 @@ export async function POST(request: NextRequest) {
     const isKenyanShort = /^[17]\d{8}$/.test(cleanedNumber)  // 7 or 1 followed by 8 digits
     const hasCountryCode = /^(2[0-9]{2}|3[0-9]{2})\d{9}$/.test(cleanedNumber) // African country codes
     
+    console.log('📋 Validation results:', {
+      isKenyanLocal,
+      isKenyanShort,
+      hasCountryCode,
+      isValid: isKenyanLocal || isKenyanShort || hasCountryCode,
+    })
+    
     if (!isKenyanLocal && !isKenyanShort && !hasCountryCode) {
+      console.error('❌ Mobile money number validation failed')
       return NextResponse.json(
         { error: 'Invalid account number. Please enter a valid mobile money number.' },
         { status: 400 }
