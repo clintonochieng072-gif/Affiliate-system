@@ -15,8 +15,7 @@ export default function DashboardNav() {
     { href: '/dashboard/products', icon: Package, label: 'Products' },
     { href: '/dashboard/referrals', icon: Users, label: 'Referrals' },
     { href: '/dashboard/earnings', icon: DollarSign, label: 'Earnings' },
-    { href: '/dashboard/withdraw', icon: Wallet, label: 'Withdraw' },
-    { href: '/dashboard/payouts', icon: CreditCard, label: 'Payouts' },
+    { href: '/dashboard/payouts', icon: Wallet, label: 'Withdraw' },
   ]
 
   const isActive = (href: string) => pathname === href

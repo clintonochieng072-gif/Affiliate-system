@@ -98,8 +98,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
     }
 
-    // Calculate available balance (using new 70 KES per referral)
-    const totalEarnings = affiliate.referrals.length * COMMISSION_PER_REFERRAL
+    // Calculate available balance from actual commission amounts stored in database
+    // NEVER assume commission amounts - always use what's stored
+    const totalEarnings = affiliate.referrals.reduce(
+      (sum, r) => sum + decimalToNumber(r.commissionAmount),
+      0
+    )
 
     const totalWithdrawn = affiliate.withdrawals.reduce(
       (sum, w) => sum + decimalToNumber(w.requestedAmount),

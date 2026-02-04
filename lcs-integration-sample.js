@@ -97,7 +97,7 @@ async function recordCommission(referralCode, userEmail, amount, transactionRefe
       body: JSON.stringify({
         referrer_id: referralCode,
         user_email: userEmail,
-        amount: amount,
+        amount: amount, // 70 KES per referral as per agreement
         reference: transactionReference,
         product_slug: 'lead-capture-system',
         metadata: {
@@ -189,8 +189,8 @@ async function handleRegistration(req, res) {
   const referralCode = getReferralCode(req);
   
   if (referralCode) {
-    // Commission amount (e.g., 5000 cents = KSh 50)
-    const commissionAmount = 5000;
+    // Commission amount - 70 KES per successful referral
+    const commissionAmount = 70;
     
     // Generate unique reference
     const reference = `LCS_REG_${user.id}_${Date.now()}`;
@@ -272,7 +272,7 @@ async function recordCommissionWithRetry(referralCode, userEmail, amount, refere
 // commissionQueue.add({
 //   referralCode: 'AFF123',
 //   userEmail: 'user@mail.com',
-//   amount: 5000,
+//   amount: 70,
 //   reference: 'TX_123'
 // });
 

@@ -15,7 +15,7 @@ Authorization: Bearer YOUR_WEBHOOK_SECRET
 {
   "referrer_id": "AFF123",
   "user_email": "user@mail.com",
-  "amount": 5000,
+  "amount": 70,
   "reference": "UNIQUE_TX_REF"
 }
 ```
@@ -28,7 +28,7 @@ curl -X POST http://localhost:3000/api/commission \
   -d '{
     "referrer_id": "jWdlBtQzvE",
     "user_email": "newuser@example.com",
-    "amount": 5000,
+    "amount": 70,
     "reference": "LCS_TX_12345"
   }'
 ```

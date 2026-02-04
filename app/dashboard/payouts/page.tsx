@@ -67,7 +67,7 @@ export default function PayoutsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          requestedAmount: amount,
+          amount: amount,
           mpesaNumber: mpesaNumber
         })
       })
@@ -116,8 +116,8 @@ export default function PayoutsPage() {
 
       <main className="lg:ml-64 p-4 lg:p-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Payouts</h1>
-          <p className="text-slate-400">Request withdrawals and track payout history</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Withdraw</h1>
+          <p className="text-slate-400">Request withdrawals and track withdrawal history</p>
         </div>
 
         {/* Balance Card */}
@@ -235,17 +235,17 @@ export default function PayoutsPage() {
           </form>
         </div>
 
-        {/* Payout History */}
+        {/* Withdrawal History */}
         <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-800">
-            <h2 className="text-xl font-bold text-white">Payout History</h2>
+            <h2 className="text-xl font-bold text-white">Withdrawal History</h2>
           </div>
 
           {payouts.length === 0 ? (
             <div className="p-12 text-center">
               <CreditCard className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-slate-400 mb-2">No payouts yet</h3>
-              <p className="text-slate-500">Your payout requests will appear here</p>
+              <h3 className="text-xl font-semibold text-slate-400 mb-2">No withdrawals yet</h3>
+              <p className="text-slate-500">Your withdrawal requests will appear here</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

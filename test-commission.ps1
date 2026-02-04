@@ -23,12 +23,12 @@ try {
 
 Write-Host "`n---`n"
 
-# Test 2: Valid Commission Request
+# Test 2: Valid Commission Request (70 KES as per LCS integration)
 Write-Host "Test 2: Valid Commission Request" -ForegroundColor Yellow
 $validPayload = @{
     referrer_id = "jWdlBtQzvE"  # Replace with your actual referral code from dashboard
     user_email = "newuser@example.com"
-    amount = 5000
+    amount = 70  # 70 KES per successful referral
     reference = "LCS_TX_" + (Get-Random -Maximum 999999)
     product_slug = "lead-capture-system"
     metadata = @{
@@ -65,7 +65,7 @@ Write-Host "Test 4: Invalid Referrer ID" -ForegroundColor Yellow
 $invalidRefPayload = @{
     referrer_id = "INVALID123"
     user_email = "test@example.com"
-    amount = 3000
+    amount = 70
     reference = "LCS_TX_" + (Get-Random -Maximum 999999)
 } | ConvertTo-Json
 
@@ -86,7 +86,7 @@ Write-Host "`n---`n"
 Write-Host "Test 5: Missing Required Fields" -ForegroundColor Yellow
 $missingFieldsPayload = @{
     referrer_id = "jWdlBtQzvE"
-    amount = 2000
+    amount = 70
 } | ConvertTo-Json
 
 try {

@@ -43,7 +43,7 @@ Authorization: Bearer YOUR_WEBHOOK_SECRET
 {
   "referrer_id": "AFF123",           // Required: Affiliate's referral code
   "user_email": "newuser@mail.com",  // Required: New user's email
-  "amount": 5000,                    // Required: Commission amount (in minor units)
+  "amount": 70,                       // Required: Commission amount (70 KES per referral)
   "reference": "PAYSTACK_TX_REF",    // Required: Unique transaction reference
   "product_slug": "lcs",             // Optional: Product identifier
   "metadata": {                      // Optional: Additional data
@@ -59,7 +59,7 @@ Authorization: Bearer YOUR_WEBHOOK_SECRET
 |-------|------|----------|-------------|
 | `referrer_id` | string | Yes | The affiliate's referral code (from their referral link) |
 | `user_email` | string | Yes | Email of the user who registered |
-| `amount` | number | Yes | Commission amount in minor units (e.g., cents for KES) |
+| `amount` | number | Yes | Commission amount (70 KES per referral as per agreement) |
 | `reference` | string | Yes | Unique transaction reference (used for idempotency) |
 | `product_slug` | string | No | Product identifier (defaults to "default") |
 | `metadata` | object | No | Additional data to store with the commission |
@@ -77,7 +77,7 @@ Authorization: Bearer YOUR_WEBHOOK_SECRET
     "id": "uuid-here",
     "affiliateId": "uuid-here",
     "userEmail": "newuser@mail.com",
-    "amount": 5000,
+    "amount": 70,
     "reference": "PAYSTACK_TX_REF",
     "status": "paid",
     "createdAt": "2024-01-01T00:00:00.000Z"
@@ -97,7 +97,13 @@ If the same `reference` is sent again:
     "id": "uuid-here",
     "affiliateId": "uuid-here",
     "userEmail": "newuser@mail.com",
-    "amount": 5000,
+    "amount": 70,
+    "reference": "PAYSTACK_TX_REF",
+    "status": "paid",
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
     "reference": "PAYSTACK_TX_REF",
     "status": "paid",
     "createdAt": "2024-01-01T00:00:00.000Z"
@@ -225,7 +231,7 @@ async function recordCommission(referrerId, userEmail, amount, txReference) {
 await recordCommission(
   'AFF123',
   'newuser@example.com',
-  5000,
+  70,  // 70 KES per referral
   'PAYSTACK_TX_12345'
 );
 ```
@@ -267,7 +273,7 @@ function recordCommission($referrerId, $userEmail, $amount, $reference) {
 }
 
 // Usage
-recordCommission('AFF123', 'newuser@example.com', 5000, 'PAYSTACK_TX_12345');
+recordCommission('AFF123', 'newuser@example.com', 70, 'PAYSTACK_TX_12345');
 ?>
 ```
 
@@ -299,7 +305,7 @@ def record_commission(referrer_id, user_email, amount, reference):
     return response.json()
 
 # Usage
-record_commission('AFF123', 'newuser@example.com', 5000, 'PAYSTACK_TX_12345')
+record_commission('AFF123', 'newuser@example.com', 70, 'PAYSTACK_TX_12345')  # 70 KES per referral
 ```
 
 ### 4. Handle Responses
@@ -354,7 +360,7 @@ async function recordCommissionWithRetry(data, maxRetries = 3) {
      -d '{
        "referrer_id": "AFF123",
        "user_email": "test@example.com",
-       "amount": 5000,
+       "amount": 70,
        "reference": "TEST_TX_123"
      }'
    ```
