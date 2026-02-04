@@ -57,12 +57,14 @@ export default function PayoutsPage() {
       return
     }
 
-    // Validate mobile money number (accepts 07, 01, and country codes)
+    // Validate mobile money number (basic check - Paystack will do final validation)
     const cleanedMpesa = mpesaNumber.replace(/[\s\-\+]/g, '')
-    const isValidNumber = /^(0[17]\d{8}|[17]\d{8}|2[0-9]{2}\d{9}|3[0-9]{2}\d{9})$/.test(cleanedMpesa)
+    
+    // Accept any number with 9-15 digits (covers all African mobile money formats)
+    const isValidNumber = /^\d{9,15}$/.test(cleanedMpesa)
     
     if (!isValidNumber) {
-      setMessage({ type: 'error', text: 'Invalid account number. Please enter a valid mobile money number.' })
+      setMessage({ type: 'error', text: 'Invalid account number. Please enter a valid mobile money number (9-15 digits).' })
       return
     }
 

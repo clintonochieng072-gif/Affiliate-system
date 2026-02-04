@@ -65,7 +65,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate mobile money number format
-    // Accepts: Kenyan (254XXXXXXXXX, 07/01XXXXXXXX) and other African country formats
+    // Accept any reasonable phone number format (9-15 digits)
+    // Paystack will do final validation for M-PESA compatibility
     const cleanedNumber = mpesaNumber.replace(/[\s\-\+]/g, '')
     
     console.log('🔍 Validating mobile money number:', {
@@ -74,40 +75,32 @@ export async function POST(request: NextRequest) {
       length: cleanedNumber.length,
     })
     
-    // Check for valid mobile money formats:
-    // - 254XXXXXXXXX (Kenya with country code)
-    // - 07XXXXXXXX or 01XXXXXXXX (Kenya local)
-    // - 7XXXXXXXX or 1XXXXXXXX (Kenya without leading 0)
-    // - Other African country codes (e.g., 256 for Uganda, 255 for Tanzania, etc.)
-    const isKenyanLocal = /^0[17]\d{8}$/.test(cleanedNumber) // 07 or 01 followed by 8 digits
-    const isKenyanShort = /^[17]\d{8}$/.test(cleanedNumber)  // 7 or 1 followed by 8 digits
-    const hasCountryCode = /^(2[0-9]{2}|3[0-9]{2})\d{9}$/.test(cleanedNumber) // African country codes
+    // Basic validation: 9-15 digits (covers all African mobile money formats)
+    const isValidLength = /^\d{9,15}$/.test(cleanedNumber)
     
-    console.log('📋 Validation results:', {
-      isKenyanLocal,
-      isKenyanShort,
-      hasCountryCode,
-      isValid: isKenyanLocal || isKenyanShort || hasCountryCode,
-    })
-    
-    if (!isKenyanLocal && !isKenyanShort && !hasCountryCode) {
-      console.error('❌ Mobile money number validation failed')
+    if (!isValidLength) {
+      console.error('❌ Mobile money number validation failed - invalid length or format')
       return NextResponse.json(
-        { error: 'Invalid account number. Please enter a valid mobile money number.' },
+        { error: 'Invalid account number. Please enter a valid mobile money number (9-15 digits).' },
         { status: 400 }
       )
     }
+    
+    console.log('✅ Number format validated, length:', cleanedNumber.length)
 
-    // Format to international format (254XXXXXXXXX for Kenya)
+    // Format to international format for Kenya if needed
     let formattedNumber = cleanedNumber
-    if (isKenyanLocal) {
+    if (/^0[17]\d{8}$/.test(cleanedNumber)) {
       // 07XXXXXXXX or 01XXXXXXXX -> 254XXXXXXXXX
       formattedNumber = '254' + cleanedNumber.substring(1)
-    } else if (isKenyanShort) {
+      console.log('📱 Formatted Kenyan local to international:', formattedNumber)
+    } else if (/^[17]\d{8}$/.test(cleanedNumber)) {
       // 7XXXXXXXX or 1XXXXXXXX -> 254XXXXXXXXX
       formattedNumber = '254' + cleanedNumber
+      console.log('📱 Formatted Kenyan short to international:', formattedNumber)
+    } else {
+      console.log('📱 Using number as-is (has country code or other format):', formattedNumber)
     }
-    // If already has country code, use as-is
 
     // Get affiliate with paid referrals
     const affiliate = await prisma.affiliate.findUnique({

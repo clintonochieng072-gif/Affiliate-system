@@ -112,7 +112,7 @@ $badHeaders = @{
 $unauthorizedPayload = @{
     referrer_id = "jWdlBtQzvE"
     user_email = "test@example.com"
-    amount = 1000
+    amount = 70
     reference = "LCS_TX_" + (Get-Random -Maximum 999999)
 } | ConvertTo-Json
 
@@ -134,7 +134,7 @@ Write-Host "Test 7: Invalid Email Format" -ForegroundColor Yellow
 $invalidEmailPayload = @{
     referrer_id = "jWdlBtQzvE"
     user_email = "not-an-email"
-    amount = 1500
+    amount = 70
     reference = "LCS_TX_" + (Get-Random -Maximum 999999)
 } | ConvertTo-Json
 
@@ -156,7 +156,7 @@ Write-Host "Test 8: Negative Amount" -ForegroundColor Yellow
 $negativeAmountPayload = @{
     referrer_id = "jWdlBtQzvE"
     user_email = "test@example.com"
-    amount = -1000
+    amount = -70
     reference = "LCS_TX_" + (Get-Random -Maximum 999999)
 } | ConvertTo-Json
 
