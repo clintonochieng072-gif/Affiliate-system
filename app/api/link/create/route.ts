@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { nanoid } from 'nanoid'
-import { getReferralUrl } from '@/lib/url'
+import { getSalesTrackingUrl } from '@/lib/url'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,13 +19,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
 
-    // Get affiliate by email
-    const affiliate = await prisma.affiliate.findUnique({
+    // Get sales agent by email
+    const salesAgent = await prisma.affiliate.findUnique({
       where: { email: session.user.email }
     })
 
-    if (!affiliate) {
-      return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
+    if (!salesAgent) {
+      return NextResponse.json({ error: 'Sales agent not found' }, { status: 404 })
     }
 
     // Get product
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const existingLink = await prisma.affiliateLink.findUnique({
       where: {
         affiliateId_productId: {
-          affiliateId: affiliate.id,
+          affiliateId: salesAgent.id,
           productId: productId
         }
       }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       // Return existing link
       return NextResponse.json({
         link: existingLink,
-        referralUrl: getReferralUrl(existingLink.referralCode, request)
+        salesTrackingUrl: getSalesTrackingUrl(existingLink.referralCode, request)
       })
     }
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Create new affiliate link
     const link = await prisma.affiliateLink.create({
       data: {
-        affiliateId: affiliate.id,
+        affiliateId: salesAgent.id,
         productId: productId,
         productSlug: product.slug,
         referralCode: referralCode
@@ -73,10 +73,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       link,
-      referralUrl: getReferralUrl(referralCode, request)
+      salesTrackingUrl: getSalesTrackingUrl(referralCode, request)
     })
   } catch (error) {
-    console.error('Error creating affiliate link:', error)
-    return NextResponse.json({ error: 'Failed to create affiliate link' }, { status: 500 })
+    console.error('Error creating sales tracking link:', error)
+    return NextResponse.json({ error: 'Failed to create sales tracking link' }, { status: 500 })
   }
 }

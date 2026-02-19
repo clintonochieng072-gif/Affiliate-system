@@ -15,8 +15,8 @@
  * 5. Fallback to localhost:3000
  */
 export function getBaseUrl(request?: Request): string {
-  // Hardcoded production domain - always use this for referral links
-  const PRODUCTION_DOMAIN = 'https://affiliate.clintonstack.com'
+  // Hardcoded production domain - always use this for sales tracking links
+  const PRODUCTION_DOMAIN = 'https://sales.clintonstack.com'
   
   // 1. Check for explicit NEXT_PUBLIC_SITE_URL (highest priority)
   if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -34,10 +34,12 @@ export function getBaseUrl(request?: Request): string {
  * @param request - Optional request object for server-side URL generation
  * @returns Full referral URL
  */
-export function getReferralUrl(code: string, request?: Request): string {
+export function getSalesTrackingUrl(code: string, request?: Request): string {
   const baseUrl = getBaseUrl(request)
   return `${baseUrl}/r/${code}`
 }
+
+export const getReferralUrl = getSalesTrackingUrl
 
 /**
  * Get the current environment name
@@ -69,7 +71,7 @@ export function isProduction(): boolean {
 export function useBaseUrl(): string {
   if (typeof window === 'undefined') {
     // Server-side rendering fallback
-    return process.env.NEXT_PUBLIC_SITE_URL || 'https://affiliate.clintonstack.com'
+    return process.env.NEXT_PUBLIC_SITE_URL || 'https://sales.clintonstack.com'
   }
   return getBaseUrl()
 }
@@ -82,6 +84,11 @@ export function useBaseUrl(): string {
  * @returns Full referral URL
  */
 export function buildReferralUrl(code: string): string {
+  const baseUrl = useBaseUrl()
+  return `${baseUrl}/r/${code}`
+}
+
+export function buildSalesTrackingUrl(code: string): string {
   const baseUrl = useBaseUrl()
   return `${baseUrl}/r/${code}`
 }

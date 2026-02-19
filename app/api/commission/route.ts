@@ -14,9 +14,10 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 
 interface CommissionPayload {
-  referrer_id: string       // Affiliate's referral code
+  agent_code?: string       // Sales agent code
+  referrer_id?: string      // Legacy alias for backward compatibility
   user_email: string         // New user's email
-  amount: number             // Commission amount in KES (Kenya Shillings)
+  amount: number             // Sales earnings amount in KES (Kenya Shillings)
   reference: string          // Unique transaction reference (for idempotency)
   product_slug?: string      // Optional: specific product identifier
   metadata?: Record<string, any> // Optional: additional data
@@ -24,9 +25,9 @@ interface CommissionPayload {
 
 interface CommissionResponse {
   success: boolean
-  commission?: {
+  salesEarning?: {
     id: string
-    affiliateId: string
+    salesAgentId: string
     userEmail: string
     amount: number
     reference: string
@@ -39,7 +40,7 @@ interface CommissionResponse {
 
 /**
  * POST /api/commission
- * Records a commission for an affiliate when a referral converts
+ * Records a sales earning for a sales agent when a subscription converts
  */
 export async function POST(request: NextRequest): Promise<NextResponse<CommissionResponse>> {
   const startTime = Date.now()
@@ -80,15 +81,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
       )
     }
 
-    const { referrer_id, user_email, amount, reference, product_slug = 'default', metadata } = body
+    const { agent_code, referrer_id, user_email, amount, reference, product_slug = 'default', metadata } = body
+    const trackingCode = agent_code || referrer_id
 
     // Validate required fields
-    if (!referrer_id || !user_email || !amount || !reference) {
+    if (!trackingCode || !user_email || !amount || !reference) {
       console.warn('⚠️ Missing required fields', { body })
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Missing required fields: referrer_id, user_email, amount, reference' 
+          error: 'Missing required fields: agent_code, user_email, amount, reference' 
         },
         { status: 400 }
       )
@@ -114,7 +116,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
     }
 
     console.log('📥 Commission request received', {
-      referrer_id,
+      agent_code: trackingCode,
       user_email,
       amount,
       reference,
@@ -142,10 +144,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
       return NextResponse.json(
         {
           success: true,
-          message: 'Commission already processed (idempotent)',
-          commission: {
+          message: 'Sales earning already processed (idempotent)',
+          salesEarning: {
             id: existingReferral.id,
-            affiliateId: existingReferral.affiliateId,
+            salesAgentId: existingReferral.affiliateId,
             userEmail: user_email,
             amount: amount,
             reference: reference,
@@ -157,9 +159,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
       )
     }
 
-    // Step 4: Find affiliate by referrer_id (referral code)
+    // Step 4: Find sales agent by tracking code
     const affiliateLink = await prisma.affiliateLink.findUnique({
-      where: { referralCode: referrer_id },
+      where: { referralCode: trackingCode },
       include: { 
         affiliate: {
           select: { id: true, email: true, name: true }
@@ -168,27 +170,27 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
     })
 
     if (!affiliateLink) {
-      console.warn('⚠️ Invalid referrer_id', { referrer_id })
+      console.warn('⚠️ Invalid agent_code', { agent_code: trackingCode })
       return NextResponse.json(
-        { success: false, error: 'Referrer ID not found' },
+        { success: false, error: 'Agent code not found' },
         { status: 404 }
       )
     }
 
-    console.log('✅ Affiliate found', {
-      affiliateId: affiliateLink.affiliateId,
-      affiliateName: affiliateLink.affiliate.name,
-      affiliateEmail: affiliateLink.affiliate.email,
+    console.log('✅ Sales agent found', {
+      salesAgentId: affiliateLink.affiliateId,
+      salesAgentName: affiliateLink.affiliate.name,
+      salesAgentEmail: affiliateLink.affiliate.email,
     })
 
-    // Step 5: Create commission record in database
-    const commission = await prisma.referral.create({
+    // Step 5: Create sales earning record in database
+    const salesEarning = await prisma.referral.create({
       data: {
         affiliateId: affiliateLink.affiliateId,
         userEmail: user_email,
         productSlug: product_slug,
         amountPaid: amount,
-        commissionAmount: amount, // Full amount goes to affiliate
+        commissionAmount: amount, // Full amount goes to sales agent
         paymentReference: reference,
         status: 'paid', // Mark as paid for LCS completed registrations
       },
@@ -196,12 +198,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
 
     const duration = Date.now() - startTime
 
-    console.log('✅ Commission recorded successfully', {
-      commissionId: commission.id,
-      affiliateId: commission.affiliateId,
-      userEmail: commission.userEmail,
-      amount: parseFloat(commission.commissionAmount.toString()),
-      reference: commission.paymentReference,
+    console.log('✅ Sales earning recorded successfully', {
+      salesEarningId: salesEarning.id,
+      salesAgentId: salesEarning.affiliateId,
+      userEmail: salesEarning.userEmail,
+      amount: parseFloat(salesEarning.commissionAmount.toString()),
+      reference: salesEarning.paymentReference,
       duration: `${duration}ms`,
     })
 
@@ -209,14 +211,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
     return NextResponse.json(
       {
         success: true,
-        commission: {
-          id: commission.id,
-          affiliateId: commission.affiliateId,
-          userEmail: commission.userEmail,
-          amount: parseFloat(commission.commissionAmount.toString()),
-          reference: commission.paymentReference,
-          status: commission.status,
-          createdAt: commission.createdAt.toISOString(),
+        salesEarning: {
+          id: salesEarning.id,
+          salesAgentId: salesEarning.affiliateId,
+          userEmail: salesEarning.userEmail,
+          amount: parseFloat(salesEarning.commissionAmount.toString()),
+          reference: salesEarning.paymentReference,
+          status: salesEarning.status,
+          createdAt: salesEarning.createdAt.toISOString(),
         },
       },
       { status: 200 }
@@ -225,7 +227,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
   } catch (error: any) {
     const duration = Date.now() - startTime
     
-    console.error('❌ Commission processing error', {
+    console.error('❌ Sales earning processing error', {
       error: error.message,
       code: error.code,
       duration: `${duration}ms`,
@@ -244,7 +246,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
     if (error.code === 'P2003') {
       // Foreign key constraint violation
       return NextResponse.json(
-        { success: false, error: 'Invalid affiliate reference' },
+        { success: false, error: 'Invalid sales agent reference' },
         { status: 400 }
       )
     }
@@ -263,26 +265,26 @@ export async function POST(request: NextRequest): Promise<NextResponse<Commissio
  */
 export async function GET() {
   return NextResponse.json({
-    service: 'Affiliate Commission API',
+    service: 'Sales Earnings API',
     version: '1.0.0',
     status: 'operational',
     endpoints: {
       POST: {
-        description: 'Record a commission for an affiliate',
+        description: 'Record a sales earning for a sales agent',
         authentication: 'Bearer token (WEBHOOK_SECRET)',
         payload: {
-          referrer_id: 'string (required) - Affiliate referral code',
+          agent_code: 'string (required) - Sales agent code',
           user_email: 'string (required) - New user email',
-          amount: 'number (required) - Commission amount',
+          amount: 'number (required) - Sales earnings amount',
           reference: 'string (required) - Unique transaction reference',
           product_slug: 'string (optional) - Product identifier',
           metadata: 'object (optional) - Additional data',
         },
         responses: {
-          200: 'Commission recorded successfully',
+          200: 'Sales earning recorded successfully',
           400: 'Invalid request payload',
           401: 'Unauthorized (invalid secret)',
-          404: 'Referrer ID not found',
+          404: 'Agent code not found',
           409: 'Duplicate transaction',
           500: 'Server error',
         },

@@ -134,8 +134,8 @@ export default function PayoutsPage() {
     )
   }
 
-  const availableBalance = data.balance || 0
-  const payouts = data.payouts || []
+  const availableBalance = data.availableSalesEarnings || 0
+  const payouts = data.payoutHistory || []
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -144,7 +144,7 @@ export default function PayoutsPage() {
       <main className="lg:ml-64 p-4 lg:p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Withdraw</h1>
-          <p className="text-slate-400">Request withdrawals and track withdrawal history</p>
+          <p className="text-slate-400">Request payouts and track payout history</p>
         </div>
 
         {/* Balance Card */}
@@ -294,7 +294,7 @@ export default function PayoutsPage() {
                   {payouts.map((payout: any) => (
                     <tr key={payout.id} className="hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4 text-sm font-semibold text-white">
-                        {formatCurrency(payout.amount)}
+                        {formatCurrency(payout.requestedAmount)}
                       </td>
                       <td className="px-6 py-4">
                         <span
@@ -336,7 +336,7 @@ export default function PayoutsPage() {
             Withdrawal Information
           </h3>
           <ul className="space-y-2 text-slate-300 text-sm">
-            <li>• Minimum withdrawal amount is KSh 140 (2 referrals)</li>
+            <li>• Minimum withdrawal amount is KSh 140 (2 active subscriptions)</li>
             <li>• Withdrawals must be in multiples of KSh 140</li>
             <li>• Platform fee: KSh 30 per KSh 140 block (you receive KSh 110)</li>
             <li>• Withdrawals are processed within 24 hours</li>

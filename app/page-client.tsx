@@ -18,7 +18,7 @@ export default function Home() {
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (session) {
-      router.push('/dashboard')
+      router.push('/sales-dashboard')
     }
   }, [session, router])
 
@@ -75,23 +75,23 @@ export default function Home() {
 
           <div className="mb-6 inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-full px-4 py-2 text-green-400 text-sm font-medium">
             <Star className="w-4 h-4 fill-current" />
-            <span>Join 1000+ Young African Affiliates</span>
+            <span>Join the Clintonstack Sales Network</span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-green-300 bg-clip-text text-transparent">
-            Turn Your Influence into Income with Clintonstack Affiliates
+            Build a Professional Digital Sales Office with Clintonstack
           </h1>
 
           <p className="text-xl md:text-2xl text-slate-300 mb-12 max-w-3xl mx-auto">
-            Join a community of young Africans earning from promoting our SaaS products. Simple. Transparent. Rewarding.
+            Become an Independent Sales Agent, generate active SaaS subscriptions, and earn structured sales earnings with full performance visibility.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+              onClick={() => signIn('google', { callbackUrl: '/sales-dashboard' })}
               className="group inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold px-8 py-4 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/50"
             >
-              Get Started Free
+              Join Sales Team
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <a
@@ -106,15 +106,15 @@ export default function Home() {
           <div className="mt-20 grid grid-cols-2 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
             <div className="text-center">
               <div className="text-4xl font-bold text-green-400 mb-2">KSh 2.5M+</div>
-              <div className="text-slate-400">Paid to Affiliates</div>
+              <div className="text-slate-400">Sales Earnings Paid</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold text-blue-400 mb-2">1000+</div>
-              <div className="text-slate-400">Active Affiliates</div>
+              <div className="text-slate-400">Active Sales Agents</div>
             </div>
             <div className="text-center col-span-2 md:col-span-1">
               <div className="text-4xl font-bold text-orange-400 mb-2">KSh 70</div>
-              <div className="text-slate-400">Per Referral</div>
+              <div className="text-slate-400">Per Active Subscription</div>
             </div>
           </div>
         </div>
@@ -125,10 +125,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Why Choose Clintonstack Affiliates?
+              Why Join Clintonstack Sales Network?
             </h2>
             <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              Everything you need to start earning from your network
+              A structured environment for independent digital sales professionals
             </p>
           </div>
 
@@ -138,9 +138,9 @@ export default function Home() {
               <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
                 <DollarSign className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Earn Money Easily</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Performance-Based Sales Earnings</h3>
               <p className="text-slate-400 leading-relaxed">
-                Promote SaaS products to your network and get up to 30% commission on every successful referral. Get paid directly to your bank account.
+                Generate qualified SaaS subscriptions and earn clear monthly sales earnings. Payout processing is transparent and professional.
               </p>
             </div>
 
@@ -149,9 +149,9 @@ export default function Home() {
               <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
                 <Users className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Trusted by Youth</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Professional Team Structure</h3>
               <p className="text-slate-400 leading-relaxed">
-                Supporting young entrepreneurs across Africa with reliable income opportunities. Join thousands who are already earning.
+                Operate as an Independent Sales Agent within a structured digital sales organization and real performance standards.
               </p>
             </div>
 
@@ -160,9 +160,9 @@ export default function Home() {
               <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
                 <TrendingUp className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Transparent Dashboard</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Digital Sales Office</h3>
               <p className="text-slate-400 leading-relaxed">
-                Track your referrals, earnings, and payouts in real-time. See exactly how much you're making and when you'll get paid.
+                Monitor active subscriptions, sales tracking links, monthly sales earnings, and payout history in one professional workspace.
               </p>
             </div>
           </div>
@@ -177,7 +177,7 @@ export default function Home() {
               How It Works
             </h2>
             <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              Start earning in 4 simple steps
+              Activate your Sales Agent office in 4 steps
             </p>
           </div>
 
@@ -188,9 +188,9 @@ export default function Home() {
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">
                   1
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Sign Up with Google</h3>
+                <h3 className="text-xl font-bold text-white mb-3">Register as a Sales Agent</h3>
                 <p className="text-slate-400">
-                  Quick and secure authentication. Get started in seconds.
+                  Apply to join the Clintonstack Sales Team with secure Google authentication.
                 </p>
               </div>
               {/* Arrow */}
@@ -205,9 +205,9 @@ export default function Home() {
                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">
                   2
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Get Your Links</h3>
+                <h3 className="text-xl font-bold text-white mb-3">Create Sales Tracking Links</h3>
                 <p className="text-slate-400">
-                  Generate unique referral links for any product in seconds.
+                  Generate unique sales tracking links for each product and campaign.
                 </p>
               </div>
               <div className="hidden lg:block absolute top-1/2 -right-4 transform -translate-y-1/2 text-green-500/30">
@@ -221,9 +221,9 @@ export default function Home() {
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">
                   3
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Share & Earn</h3>
+                <h3 className="text-xl font-bold text-white mb-3">Drive Subscriptions</h3>
                 <p className="text-slate-400">
-                  Share your links and earn 30% commission on every sale.
+                  Promote product value, convert active subscriptions, and grow recurring sales earnings.
                 </p>
               </div>
               <div className="hidden lg:block absolute top-1/2 -right-4 transform -translate-y-1/2 text-orange-500/30">
@@ -237,9 +237,9 @@ export default function Home() {
                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">
                   4
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Withdraw Earnings</h3>
+                <h3 className="text-xl font-bold text-white mb-3">Receive Payouts</h3>
                 <p className="text-slate-400">
-                  Withdraw earnings starting at KSh 140 (2 referrals). Get paid via M-PESA.
+                  Request payouts from your monthly sales earnings and receive funds via M-PESA.
                 </p>
               </div>
             </div>
@@ -258,7 +258,7 @@ export default function Home() {
               Lead Capture System
             </h2>
             <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              The #1 tool for capturing and converting leads. Help businesses grow and earn 30% commission.
+              The #1 tool for capturing and converting leads. Help businesses grow and earn performance-based sales earnings.
             </p>
           </div>
 
@@ -287,7 +287,7 @@ export default function Home() {
 
                 <div className="mt-8 p-6 bg-green-500/10 border border-green-500/30 rounded-xl">
                   <div className="text-3xl font-bold text-green-400 mb-2">Earn KSh 3,000</div>
-                  <div className="text-slate-300">Per successful referral (30% commission)</div>
+                  <div className="text-slate-300">Per active subscription (performance-based sales earnings)</div>
                 </div>
               </div>
 
@@ -296,10 +296,10 @@ export default function Home() {
                   <div className="text-6xl">📊</div>
                 </div>
                 <button
-                  onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+                  onClick={() => signIn('google', { callbackUrl: '/sales-dashboard' })}
                   className="block w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-bold text-center py-4 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/50"
                 >
-                  Generate Affiliate Link
+                  Generate Sales Tracking Link
                 </button>
               </div>
             </div>
@@ -315,7 +315,7 @@ export default function Home() {
               Success Stories
             </h2>
             <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              Hear from affiliates earning with Clintonstack
+              Hear from Sales Agents in the Clintonstack Sales Network
             </p>
           </div>
 
@@ -370,7 +370,7 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-slate-300 mb-6 leading-relaxed">
-                "The transparency is amazing. I can see every click, every conversion, and exactly how much I've earned. Best affiliate program!"
+                "The transparency is excellent. I can track subscriptions, sales performance, and payouts in one place. It feels like a real sales organization."
               </p>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold">
@@ -391,16 +391,16 @@ export default function Home() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="bg-gradient-to-br from-blue-950 via-slate-900 to-green-950 p-12 md:p-16 rounded-3xl border border-blue-500/30 shadow-2xl shadow-blue-500/20">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Ready to Start Earning?
+              Ready to Join the Sales Team?
             </h2>
             <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
-              Join thousands of young Africans building their financial freedom through affiliate marketing.
+              Join Clintonstack Sales Network and operate your own Digital Sales Office with structured earnings and payouts.
             </p>
             <button
-              onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+              onClick={() => signIn('google', { callbackUrl: '/sales-dashboard' })}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-bold px-10 py-5 rounded-lg text-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/50"
             >
-              Get Started Free
+              Register as a Sales Agent
               <ArrowRight className="w-6 h-6" />
             </button>
           </div>
@@ -412,15 +412,15 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="md:col-span-2">
-              <h3 className="text-2xl font-bold text-white mb-4">Clintonstack Affiliates</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Clintonstack Sales Network</h3>
               <p className="text-slate-400 mb-4">
-                Empowering young Africans to earn from their influence. Join the movement today.
+                A professional sales organization for Independent Sales Agents.
               </p>
               <button
-                onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+                onClick={() => signIn('google', { callbackUrl: '/sales-dashboard' })}
                 className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-all"
               >
-                Get Started
+                Join Sales Team
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -429,7 +429,7 @@ export default function Home() {
               <h4 className="text-white font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2">
                 <li><a href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">How It Works</a></li>
-                <li><Link href="/dashboard" className="text-slate-400 hover:text-white transition-colors">Dashboard</Link></li>
+                <li><Link href="/sales-dashboard" className="text-slate-400 hover:text-white transition-colors">Sales Agent Dashboard</Link></li>
                 <li><Link href="/admin" className="text-slate-400 hover:text-white transition-colors">Admin</Link></li>
               </ul>
             </div>

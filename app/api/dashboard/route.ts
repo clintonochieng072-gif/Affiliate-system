@@ -1,6 +1,6 @@
 /**
  * Dashboard API Route
- * Returns affiliate stats, referral links, and recent referrals
+ * Returns sales agent stats, sales tracking links, and recent sales activity
  * PostgreSQL + Prisma for Neon serverless database
  */
 
@@ -22,8 +22,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get affiliate with relations
-    const affiliate = await prisma.affiliate.findUnique({
+    const salesAgent = await prisma.affiliate.findUnique({
       where: { email: session.user.email },
       include: {
         links: {
@@ -36,23 +35,23 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    if (!affiliate) {
+    if (!salesAgent) {
       return NextResponse.json(
-        { error: 'Affiliate not found' },
+        { error: 'Sales agent not found' },
         { status: 404 }
       )
     }
 
-    // Calculate total earnings (all paid referrals)
-    const paidReferrals = affiliate.referrals.filter(r => r.status === 'paid')
-    const totalEarnings = paidReferrals.reduce(
+    // Calculate total earnings (all paid sales records)
+    const paidSales = salesAgent.referrals.filter(r => r.status === 'paid')
+    const totalSalesEarnings = paidSales.reduce(
       (sum, r) => sum + decimalToNumber(r.commissionAmount),
       0
     )
 
     // Calculate pending earnings
-    const pendingReferrals = affiliate.referrals.filter(r => r.status === 'pending')
-    const pendingEarnings = pendingReferrals.reduce(
+    const pendingSales = salesAgent.referrals.filter(r => r.status === 'pending')
+    const pendingSalesEarnings = pendingSales.reduce(
       (sum, r) => sum + decimalToNumber(r.commissionAmount),
       0
     )
@@ -60,7 +59,7 @@ export async function GET(request: NextRequest) {
     // Calculate total withdrawals (completed and processing)
     const withdrawals = await prisma.withdrawal.findMany({
       where: {
-        affiliateId: affiliate.id,
+        affiliateId: salesAgent.id,
         status: { in: ['completed', 'processing'] },
       },
       orderBy: {
@@ -73,36 +72,37 @@ export async function GET(request: NextRequest) {
       0
     )
 
-    // Available balance = total earnings - total withdrawals
-    const availableBalance = totalEarnings - totalWithdrawn
+    // Available balance = total sales earnings - total withdrawals
+    const availableSalesEarnings = totalSalesEarnings - totalWithdrawn
 
     // Prepare response
     const response = {
-      affiliate: {
-        id: affiliate.id,
-        name: affiliate.name,
-        email: affiliate.email,
-        createdAt: affiliate.createdAt.toISOString(),
+      salesAgent: {
+        id: salesAgent.id,
+        name: salesAgent.name,
+        email: salesAgent.email,
+        createdAt: salesAgent.createdAt.toISOString(),
       },
-      balance: availableBalance,
-      totalEarnings: totalEarnings,
-      links: affiliate.links.map(link => ({
+      availableSalesEarnings,
+      totalSalesEarnings,
+      pendingSalesEarnings,
+      salesTrackingLinks: salesAgent.links.map(link => ({
         id: link.id,
         productSlug: link.productSlug,
-        referralCode: link.referralCode,
+        agentCode: link.referralCode,
         createdAt: link.createdAt.toISOString(),
       })),
-      referrals: affiliate.referrals.map(r => ({
+      salesActivity: salesAgent.referrals.map(r => ({
         id: r.id,
         userEmail: r.userEmail,
         productSlug: r.productSlug,
-        amountPaid: decimalToNumber(r.amountPaid),
-        commissionAmount: decimalToNumber(r.commissionAmount),
+        subscriptionValue: decimalToNumber(r.amountPaid),
+        salesEarnings: decimalToNumber(r.commissionAmount),
         paymentReference: r.paymentReference,
         status: r.status,
         createdAt: r.createdAt.toISOString(),
       })),
-      withdrawals: withdrawals.map(w => ({
+      payoutHistory: withdrawals.map(w => ({
         id: w.id,
         requestedAmount: decimalToNumber(w.requestedAmount),
         payoutAmount: decimalToNumber(w.payoutAmount),

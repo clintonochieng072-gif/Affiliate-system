@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { useState } from 'react'
 import useSWR from 'swr'
 import Link from 'next/link'
 import DashboardNav from '@/components/DashboardNav'
@@ -15,11 +16,27 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/')
     }
   }, [status, router])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !session?.user?.email) {
+      return
+    }
+
+    const onboardingKey = `sales-agent-onboarding-${session.user.email}`
+    const hasSeen = window.localStorage.getItem(onboardingKey)
+
+    if (!hasSeen) {
+      setShowOnboarding(true)
+      window.localStorage.setItem(onboardingKey, 'true')
+    }
+  }, [session])
 
   const { data, error, isLoading } = useSWR(
     session ? '/api/dashboard' : null,
@@ -46,11 +63,11 @@ export default function DashboardPage() {
     )
   }
 
-  const totalReferrals = data.referrals?.length || 0
-  const successfulConversions = data.referrals?.filter((r: any) => r.status === 'paid').length || 0
-  const totalEarnings = data.balance || 0
-  const availableBalance = totalEarnings
-  const recentReferrals = data.referrals?.slice(0, 5) || []
+  const totalSales = data.salesActivity?.length || 0
+  const activeSubscriptions = data.salesActivity?.filter((r: any) => r.status === 'paid').length || 0
+  const totalSalesEarnings = data.totalSalesEarnings || 0
+  const availableSalesEarnings = data.availableSalesEarnings || 0
+  const recentSales = data.salesActivity?.slice(0, 5) || []
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -60,8 +77,16 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Welcome back, {session?.user?.name}</h1>
-          <p className="text-slate-400">Here's what's happening with your affiliate account</p>
+          <p className="text-slate-400">Here is your Digital Sales Office performance snapshot</p>
         </div>
+
+        {showOnboarding && (
+          <div className="mb-8 bg-blue-950/40 border border-blue-500/30 rounded-xl p-5">
+            <p className="text-blue-100 font-medium">
+              Welcome to the Clintonstack Sales Network. Your Digital Sales Office is now active.
+            </p>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -70,8 +95,8 @@ export default function DashboardPage() {
               <Users className="w-8 h-8 text-blue-100" />
               <span className="text-blue-100 text-sm font-medium">Total</span>
             </div>
-            <div className="text-3xl font-bold text-white mb-1">{totalReferrals}</div>
-            <div className="text-blue-100 text-sm">Referrals</div>
+            <div className="text-3xl font-bold text-white mb-1">{totalSales}</div>
+            <div className="text-blue-100 text-sm">Sales Activity</div>
           </div>
 
           <div className="bg-gradient-to-br from-green-600 to-green-700 p-6 rounded-2xl shadow-xl border border-green-500/20">
@@ -79,8 +104,8 @@ export default function DashboardPage() {
               <TrendingUp className="w-8 h-8 text-green-100" />
               <span className="text-green-100 text-sm font-medium">Success</span>
             </div>
-            <div className="text-3xl font-bold text-white mb-1">{successfulConversions}</div>
-            <div className="text-green-100 text-sm">Conversions</div>
+            <div className="text-3xl font-bold text-white mb-1">{activeSubscriptions}</div>
+            <div className="text-green-100 text-sm">Active Subscriptions</div>
           </div>
 
           <div className="bg-gradient-to-br from-orange-600 to-orange-700 p-6 rounded-2xl shadow-xl border border-orange-500/20">
@@ -88,8 +113,8 @@ export default function DashboardPage() {
               <DollarSign className="w-8 h-8 text-orange-100" />
               <span className="text-orange-100 text-sm font-medium">Total</span>
             </div>
-            <div className="text-3xl font-bold text-white mb-1">{formatCurrency(totalEarnings)}</div>
-            <div className="text-orange-100 text-sm">Earnings</div>
+            <div className="text-3xl font-bold text-white mb-1">{formatCurrency(totalSalesEarnings)}</div>
+            <div className="text-orange-100 text-sm">Total Sales Earnings</div>
           </div>
 
           <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-6 rounded-2xl shadow-xl border border-emerald-500/20">
@@ -97,8 +122,8 @@ export default function DashboardPage() {
               <Wallet className="w-8 h-8 text-emerald-100" />
               <span className="text-emerald-100 text-sm font-medium">Available</span>
             </div>
-            <div className="text-3xl font-bold text-white mb-1">{formatCurrency(availableBalance)}</div>
-            <div className="text-emerald-100 text-sm">Balance</div>
+            <div className="text-3xl font-bold text-white mb-1">{formatCurrency(availableSalesEarnings)}</div>
+            <div className="text-emerald-100 text-sm">Available Sales Earnings</div>
           </div>
         </div>
 
@@ -111,7 +136,7 @@ export default function DashboardPage() {
                   FEATURED PRODUCT
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-2">Lead Capture System</h2>
-                <p className="text-slate-400">Earn 30% commission (KSh 3,000 per sale)</p>
+                <p className="text-slate-400">Earn structured sales earnings per active subscription</p>
               </div>
               <div className="text-4xl">📊</div>
             </div>
@@ -120,7 +145,7 @@ export default function DashboardPage() {
                 href="/dashboard/products"
                 className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 hover:scale-105"
               >
-                Generate Affiliate Link
+                Generate Sales Tracking Link
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <a
@@ -139,9 +164,9 @@ export default function DashboardPage() {
         {/* Recent Activity */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Recent Referrals</h2>
+            <h2 className="text-2xl font-bold text-white">Recent Sales Activity</h2>
             <Link
-              href="/dashboard/referrals"
+              href="/dashboard/sales"
               className="text-blue-400 hover:text-blue-300 font-medium text-sm"
             >
               View All →
@@ -149,11 +174,11 @@ export default function DashboardPage() {
           </div>
 
           <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-            {recentReferrals.length === 0 ? (
+            {recentSales.length === 0 ? (
               <div className="p-12 text-center">
                 <Users className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-slate-400 mb-2">No referrals yet</h3>
-                <p className="text-slate-500 mb-6">Start sharing your affiliate links to see referrals here</p>
+                <h3 className="text-xl font-semibold text-slate-400 mb-2">No sales activity yet</h3>
+                <p className="text-slate-500 mb-6">Start sharing your sales tracking links to activate subscriptions</p>
                 <Link
                   href="/dashboard/products"
                   className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-all"
@@ -174,7 +199,7 @@ export default function DashboardPage() {
                         Product
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                        Commission
+                        Sales Earnings
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                         Status
@@ -185,26 +210,26 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
-                    {recentReferrals.map((referral: any) => (
-                      <tr key={referral.id} className="hover:bg-slate-800/50 transition-colors">
-                        <td className="px-6 py-4 text-sm text-slate-300">{referral.userEmail}</td>
-                        <td className="px-6 py-4 text-sm text-slate-300">{referral.productSlug}</td>
+                    {recentSales.map((sale: any) => (
+                      <tr key={sale.id} className="hover:bg-slate-800/50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-slate-300">{sale.userEmail}</td>
+                        <td className="px-6 py-4 text-sm text-slate-300">{sale.productSlug}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-green-400">
-                          {formatCurrency(referral.commissionAmount)}
+                          {formatCurrency(sale.salesEarnings)}
                         </td>
                         <td className="px-6 py-4">
                           <span
                             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              referral.status === 'paid'
+                              sale.status === 'paid'
                                 ? 'bg-green-900/30 text-green-400'
                                 : 'bg-yellow-900/30 text-yellow-400'
                             }`}
                           >
-                            {referral.status}
+                            {sale.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-400">
-                          {new Date(referral.createdAt).toLocaleDateString()}
+                          {new Date(sale.createdAt).toLocaleDateString()}
                         </td>
                       </tr>
                     ))}

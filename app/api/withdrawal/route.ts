@@ -6,16 +6,16 @@ import { decimalToNumber } from '@/lib/utils'
 
 /**
  * M-PESA Withdrawal System
- * - 70 KES per referral
+ * - 70 KES per active subscription
  * - Withdrawals in multiples of 140 KES
  * - 30 KES platform fee per 140 block (stays in Paystack)
- * - 110 KES payout per 140 block (sent to affiliate)
+ * - 110 KES payout per 140 block (sent to sales agent)
  * - Paystack transfer fees: 1-1,500 = 20 KES, 1,501-20,000 = 40 KES (paid by system)
  */
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
 const COMMISSION_PER_REFERRAL = 70 // KES
-const WITHDRAWAL_BLOCK_SIZE = 140 // KES (2 referrals)
+const WITHDRAWAL_BLOCK_SIZE = 140 // KES (2 active subscriptions)
 const PLATFORM_FEE_PER_BLOCK = 30 // KES (STAYS IN PAYSTACK ACCOUNT)
 
 /**
@@ -123,8 +123,8 @@ export async function POST(request: NextRequest) {
     
     console.log('📞 Final number to send to Paystack:', formattedNumber, '(Length:', formattedNumber.length, ')')
 
-    // Get affiliate with paid referrals
-    const affiliate = await prisma.affiliate.findUnique({
+    // Get sales agent with paid sales activity
+    const salesAgent = await prisma.affiliate.findUnique({
       where: { email: session.user.email },
       include: {
         referrals: {
@@ -138,18 +138,18 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (!affiliate) {
-      return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
+    if (!salesAgent) {
+      return NextResponse.json({ error: 'Sales agent not found' }, { status: 404 })
     }
 
     // Calculate available balance from actual commission amounts stored in database
     // NEVER assume commission amounts - always use what's stored
-    const totalEarnings = affiliate.referrals.reduce(
+    const totalEarnings = salesAgent.referrals.reduce(
       (sum, r) => sum + decimalToNumber(r.commissionAmount),
       0
     )
 
-    const totalWithdrawn = affiliate.withdrawals.reduce(
+    const totalWithdrawn = salesAgent.withdrawals.reduce(
       (sum, w) => sum + decimalToNumber(w.requestedAmount),
       0
     )
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
     // Balance is deducted immediately to prevent double withdrawals
     const withdrawal = await prisma.withdrawal.create({
       data: {
-        affiliateId: affiliate.id,
+        affiliateId: salesAgent.id,
         requestedAmount: amount,
         platformFee: platformFee,
         payoutAmount: payoutAmount,
@@ -227,14 +227,14 @@ export async function POST(request: NextRequest) {
     // Account number should be in format: 254XXXXXXXXX (12 digits)
     const recipientPayload = {
       type: 'mobile_money',
-      name: affiliate.name,
+      name: salesAgent.name,
       account_number: formattedNumber,
       bank_code: 'MPESA',
       currency: 'KES',
     }
 
     console.log('🚀 Creating Paystack recipient:', {
-      name: affiliate.name,
+      name: salesAgent.name,
       account_number: formattedNumber,
       bank_code: 'MPESA',
       currency: 'KES',
@@ -286,7 +286,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initiate transfer
-    // IMPORTANT: We only send payoutAmount to affiliate, NOT the full requested amount
+    // IMPORTANT: We only send payoutAmount to sales agent, NOT the full requested amount
     // Platform fee stays in the system's Paystack account
     const transferResponse = await fetch('https://api.paystack.co/transfer', {
       method: 'POST',
@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
         source: 'balance',
         amount: Math.round(payoutAmount * 100), // Convert to cents - ONLY payout amount, NOT requested amount
         recipient: recipientData.data.recipient_code,
-        reason: `Affiliate commission withdrawal - ${numberOfBlocks} blocks (Platform fee: ${platformFee} KES retained)`,
+        reason: `Sales earnings withdrawal - ${numberOfBlocks} blocks (Platform fee: ${platformFee} KES retained)`,
         reference: withdrawal.id, // Use our withdrawal ID as reference
       }),
     })
@@ -364,7 +364,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const affiliate = await prisma.affiliate.findUnique({
+    const salesAgent = await prisma.affiliate.findUnique({
       where: { email: session.user.email },
       include: {
         withdrawals: {
@@ -373,12 +373,12 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    if (!affiliate) {
-      return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
+    if (!salesAgent) {
+      return NextResponse.json({ error: 'Sales agent not found' }, { status: 404 })
     }
 
     return NextResponse.json({
-      withdrawals: affiliate.withdrawals.map(w => ({
+      withdrawals: salesAgent.withdrawals.map(w => ({
         id: w.id,
         requestedAmount: decimalToNumber(w.requestedAmount),
         platformFee: decimalToNumber(w.platformFee),

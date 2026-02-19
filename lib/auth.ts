@@ -55,17 +55,17 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       console.log('🔐 SignIn callback triggered:', { user: user.email, provider: account?.provider })
       
-      // On successful Google sign-in, create affiliate record if doesn't exist
+      // On successful Google sign-in, create sales agent record if it doesn't exist
       if (account?.provider === 'google' && user.email) {
         try {
-          // Check if affiliate exists
-          const existingAffiliate = await prisma.affiliate.findUnique({
+          // Check if sales agent exists
+          const existingSalesAgent = await prisma.affiliate.findUnique({
             where: { email: user.email },
           })
 
-          // Create affiliate if doesn't exist
-          if (!existingAffiliate) {
-            console.log('✨ Creating new affiliate for:', user.email)
+          // Create sales agent if it doesn't exist
+          if (!existingSalesAgent) {
+            console.log('✨ Creating new sales agent for:', user.email)
             await prisma.affiliate.create({
               data: {
                 name: user.name || user.email,
@@ -73,10 +73,10 @@ export const authOptions: NextAuthOptions = {
               },
             })
           } else {
-            console.log('✅ Existing affiliate found:', user.email)
+            console.log('✅ Existing sales agent found:', user.email)
           }
         } catch (error) {
-          console.error('❌ Error creating affiliate:', error)
+          console.error('❌ Error creating sales agent:', error)
           return false // Prevent sign-in on database error
         }
       }
@@ -87,6 +87,7 @@ export const authOptions: NextAuthOptions = {
       // Add user ID to session
       if (session.user) {
         session.user.id = token.sub!
+        session.user.role = 'sales_agent'
       }
       return session
     },
@@ -95,6 +96,7 @@ export const authOptions: NextAuthOptions = {
       // Add user ID to token
       if (user) {
         token.sub = user.id
+        token.role = 'sales_agent'
       }
       return token
     },

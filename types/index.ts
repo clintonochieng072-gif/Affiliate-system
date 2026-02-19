@@ -9,6 +9,7 @@ declare module 'next-auth' {
   interface Session {
     user: {
       id: string
+      role: 'sales_agent'
       name?: string | null
       email?: string | null
       image?: string | null
@@ -16,14 +17,20 @@ declare module 'next-auth' {
   }
 }
 
+declare module 'next-auth/jwt' {
+  interface JWT {
+    role?: 'sales_agent'
+  }
+}
+
 // API request/response types
-export interface ReferralWebhookPayload {
-  referral_code: string
+export interface SalesWebhookPayload {
+  agent_code: string
   user_email: string
   product_slug: string
   amount_paid: number
   payment_reference: string
-  commission_rate?: number
+  sales_earning_rate?: number
 }
 
 export interface PayoutRequest {
@@ -31,9 +38,9 @@ export interface PayoutRequest {
 }
 
 export interface DashboardStats {
-  totalReferrals: number
-  totalEarnings: number
-  availableBalance: number
-  pendingEarnings: number
-  totalLinks: number
+  totalSales: number
+  totalSalesEarnings: number
+  availableSalesEarnings: number
+  pendingSalesEarnings: number
+  totalSalesTrackingLinks: number
 }

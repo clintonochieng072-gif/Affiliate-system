@@ -3,8 +3,8 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Affiliate System",
-  description: "Track your affiliate earnings and conversions",
+  title: "Clintonstack Sales Network",
+  description: "Professional Sales Agent Platform for tracking subscriptions, sales earnings, and payouts.",
 };
 
 export default function RootLayout({

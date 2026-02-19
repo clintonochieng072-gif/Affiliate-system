@@ -14,7 +14,7 @@ export default function ProductsPage() {
   const router = useRouter()
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [generatingLink, setGeneratingLink] = useState<string | null>(null)
-  const [affiliateLinks, setAffiliateLinks] = useState<Record<string, string>>({})
+  const [salesTrackingLinks, setSalesTrackingLinks] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -36,9 +36,9 @@ export default function ProductsPage() {
       if (!response.ok) throw new Error('Failed to generate link')
 
       const data = await response.json()
-      setAffiliateLinks(prev => ({ ...prev, [productId]: data.referralUrl }))
+      setSalesTrackingLinks(prev => ({ ...prev, [productId]: data.salesTrackingUrl }))
     } catch (error) {
-      alert('Failed to generate affiliate link')
+      alert('Failed to generate sales tracking link')
     } finally {
       setGeneratingLink(null)
     }
@@ -78,7 +78,7 @@ export default function ProductsPage() {
       <main className="lg:ml-64 p-4 lg:p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Products to Promote</h1>
-          <p className="text-slate-400">Generate affiliate links and start earning commissions</p>
+          <p className="text-slate-400">Generate sales tracking links and start earning sales earnings</p>
         </div>
 
         {products.length === 0 ? (
@@ -115,23 +115,23 @@ export default function ProductsPage() {
                   </a>
                 </div>
 
-                {affiliateLinks[product.id] ? (
+                {salesTrackingLinks[product.id] ? (
                   <div>
                     <label className="block text-sm font-medium text-slate-400 mb-2">
-                      Your Affiliate Link
+                      Your Sales Tracking Link
                     </label>
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        value={affiliateLinks[product.id]}
+                        value={salesTrackingLinks[product.id]}
                         readOnly
                         className="flex-1 bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-mono"
                       />
                       <button
-                        onClick={() => copyToClipboard(affiliateLinks[product.id])}
+                        onClick={() => copyToClipboard(salesTrackingLinks[product.id])}
                         className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all flex items-center gap-2"
                       >
-                        {copiedCode === affiliateLinks[product.id] ? (
+                        {copiedCode === salesTrackingLinks[product.id] ? (
                           <>
                             <Check className="w-4 h-4" />
                             Copied!
@@ -158,7 +158,7 @@ export default function ProductsPage() {
                       </>
                     ) : (
                       <>
-                        Generate Affiliate Link
+                        Generate Sales Tracking Link
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}

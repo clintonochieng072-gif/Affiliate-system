@@ -45,34 +45,34 @@ export default function EarningsPage() {
     )
   }
 
-  const referrals = data.referrals || []
+  const salesActivity = data.salesActivity || []
 
   // Calculate earnings
-  const paidEarnings = referrals
+  const paidEarnings = salesActivity
     .filter((r: any) => r.status === 'paid')
-    .reduce((sum: number, r: any) => sum + Number(r.commissionAmount), 0)
+    .reduce((sum: number, r: any) => sum + Number(r.salesEarnings), 0)
 
-  const pendingEarnings = referrals
+  const pendingEarnings = salesActivity
     .filter((r: any) => r.status === 'pending')
-    .reduce((sum: number, r: any) => sum + Number(r.commissionAmount), 0)
+    .reduce((sum: number, r: any) => sum + Number(r.salesEarnings), 0)
 
   const totalEarnings = paidEarnings + pendingEarnings
 
   // Monthly breakdown
   const monthlyData: Record<string, { paid: number; pending: number }> = {}
 
-  referrals.forEach((referral: any) => {
-    const date = new Date(referral.createdAt)
+  salesActivity.forEach((sale: any) => {
+    const date = new Date(sale.createdAt)
     const monthYear = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 
     if (!monthlyData[monthYear]) {
       monthlyData[monthYear] = { paid: 0, pending: 0 }
     }
 
-    if (referral.status === 'paid') {
-      monthlyData[monthYear].paid += Number(referral.commissionAmount)
+    if (sale.status === 'paid') {
+      monthlyData[monthYear].paid += Number(sale.salesEarnings)
     } else {
-      monthlyData[monthYear].pending += Number(referral.commissionAmount)
+      monthlyData[monthYear].pending += Number(sale.salesEarnings)
     }
   })
 
@@ -84,8 +84,8 @@ export default function EarningsPage() {
 
       <main className="lg:ml-64 p-4 lg:p-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Earnings</h1>
-          <p className="text-slate-400">Track your commission earnings over time</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Monthly Sales Earnings</h1>
+          <p className="text-slate-400">Track your sales earnings over time</p>
         </div>
 
         {/* Overview Cards */}
@@ -166,15 +166,15 @@ export default function EarningsPage() {
           <ul className="space-y-2 text-slate-300 text-sm">
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-              <span><strong>Pending:</strong> Commission is recorded but payment hasn't been confirmed</span>
+              <span><strong>Pending:</strong> Sales earnings are recorded but payment has not been confirmed</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-              <span><strong>Paid:</strong> Commission is confirmed and added to your available balance</span>
+              <span><strong>Paid:</strong> Sales earnings are confirmed and added to your available balance</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-              <span><strong>Minimum Withdrawal:</strong> Withdraw earnings starting at KSh 140 (2 referrals)</span>
+              <span><strong>Minimum Withdrawal:</strong> Withdraw sales earnings starting at KSh 140 (2 active subscriptions)</span>
             </li>
           </ul>
         </div>

@@ -1,6 +1,6 @@
 /**
  * Admin Dashboard API Route
- * Returns all affiliates, referrals, and stats
+ * Returns all sales agents, sales activity, and stats
  * PostgreSQL + Prisma for Neon serverless database
  */
 
@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
     // TODO: Add admin role check
     // For now, any authenticated user can access
 
-    // Get all affiliates
-    const affiliates = await prisma.affiliate.findMany({
+    // Get all sales agents
+    const salesAgents = await prisma.affiliate.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
         referrals: {
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Get all referrals
-    const referrals = await prisma.referral.findMany({
+    // Get all sales activity
+    const salesActivity = await prisma.referral.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
       include: {
@@ -53,16 +53,16 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate totals
-    const totalRevenue = referrals.reduce(
+    const totalRevenue = salesActivity.reduce(
       (sum, r) => sum + decimalToNumber(r.amountPaid),
       0
     )
-    const totalCommissions = referrals
+    const totalSalesEarnings = salesActivity
       .filter(r => r.status === 'paid')
       .reduce((sum, r) => sum + decimalToNumber(r.commissionAmount), 0)
 
-    // Prepare affiliate data with earnings
-    const affiliatesData = affiliates.map(a => {
+    // Prepare sales agent data with earnings
+    const salesAgentsData = salesAgents.map(a => {
       const totalEarnings = a.referrals.reduce(
         (sum, r) => sum + decimalToNumber(r.commissionAmount),
         0
@@ -77,9 +77,9 @@ export async function GET(request: NextRequest) {
         id: a.id,
         name: a.name,
         email: a.email,
-        totalReferrals: a.referrals.length,
-        totalEarnings,
-        availableBalance,
+        totalSalesCount: a.referrals.length,
+        totalSalesEarnings: totalEarnings,
+        availableSalesEarnings: availableBalance,
         createdAt: a.createdAt.toISOString(),
       }
     })
@@ -87,20 +87,20 @@ export async function GET(request: NextRequest) {
     // Prepare response
     const response = {
       stats: {
-        totalAffiliates: affiliates.length,
-        totalReferrals: referrals.length,
+        totalSalesAgents: salesAgents.length,
+        totalSalesActivity: salesActivity.length,
         totalRevenue,
-        totalCommissions,
+        totalSalesEarnings,
       },
-      affiliates: affiliatesData,
-      referrals: referrals.map(r => ({
+      salesAgents: salesAgentsData,
+      salesActivity: salesActivity.map(r => ({
         id: r.id,
-        affiliateName: r.affiliate.name,
-        affiliateEmail: r.affiliate.email,
+        salesAgentName: r.affiliate.name,
+        salesAgentEmail: r.affiliate.email,
         userEmail: r.userEmail,
         productSlug: r.productSlug,
-        amountPaid: decimalToNumber(r.amountPaid),
-        commissionAmount: decimalToNumber(r.commissionAmount),
+        subscriptionValue: decimalToNumber(r.amountPaid),
+        salesEarnings: decimalToNumber(r.commissionAmount),
         paymentReference: r.paymentReference,
         status: r.status,
         createdAt: r.createdAt.toISOString(),

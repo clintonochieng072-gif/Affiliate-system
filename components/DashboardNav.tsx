@@ -11,11 +11,11 @@ export default function DashboardNav() {
   const pathname = usePathname()
 
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Sales Overview' },
     { href: '/dashboard/products', icon: Package, label: 'Products' },
-    { href: '/dashboard/referrals', icon: Users, label: 'Referrals' },
-    { href: '/dashboard/earnings', icon: DollarSign, label: 'Earnings' },
-    { href: '/dashboard/payouts', icon: Wallet, label: 'Withdraw' },
+    { href: '/dashboard/sales', icon: Users, label: 'Sales Activity' },
+    { href: '/dashboard/earnings', icon: DollarSign, label: 'Sales Earnings' },
+    { href: '/dashboard/payouts', icon: Wallet, label: 'Payouts' },
   ]
 
   const isActive = (href: string) => pathname === href
@@ -76,7 +76,7 @@ export default function DashboardNav() {
             <Link href="/dashboard" className="text-2xl font-bold text-white">
               Clintonstack
             </Link>
-            <p className="text-sm text-slate-400 mt-1">Affiliate Dashboard</p>
+            <p className="text-sm text-slate-400 mt-1">Sales Agent Dashboard</p>
           </div>
 
           {/* Navigation */}

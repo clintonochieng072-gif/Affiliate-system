@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { decimalToNumber } from '@/lib/utils'
 
 /**
- * API endpoint to process affiliate payouts via Paystack
+ * API endpoint to process sales agent payouts via Paystack
  * Uses new Referral/Payout schema with PostgreSQL
  */
 export async function POST(request: NextRequest) {
@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { amount } = body
 
-    // Get affiliate with paid referrals and payouts
-    const affiliate = await prisma.affiliate.findUnique({
+    // Get sales agent with paid sales activity and payouts
+    const salesAgent = await prisma.affiliate.findUnique({
       where: { email: session.user.email },
       include: {
         referrals: {
@@ -36,19 +36,19 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (!affiliate) {
+    if (!salesAgent) {
       return NextResponse.json(
-        { error: 'Affiliate not found' },
+        { error: 'Sales agent not found' },
         { status: 404 }
       )
     }
 
     // Calculate available balance
-    const totalEarnings = affiliate.referrals.reduce(
+    const totalEarnings = salesAgent.referrals.reduce(
       (sum, r) => sum + decimalToNumber(r.commissionAmount),
       0
     )
-    const totalPayouts = affiliate.payouts.reduce(
+    const totalPayouts = salesAgent.payouts.reduce(
       (sum, p) => sum + decimalToNumber(p.amount),
       0
     )
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Create payout record
     const payout = await prisma.payout.create({
       data: {
-        affiliateId: affiliate.id,
+        affiliateId: salesAgent.id,
         amount: amount,
         status: 'pending', // Mark as pending until Paystack confirms
       },
@@ -92,9 +92,9 @@ export async function POST(request: NextRequest) {
 
     console.log('Payout request created:', {
       payout_id: payout.id,
-      affiliate_id: affiliate.id,
+      sales_agent_id: salesAgent.id,
       amount,
-      email: affiliate.email,
+      email: salesAgent.email,
     })
 
     // In production: initiate Paystack transfer here
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Payout request submitted',
+      message: 'Sales payout request submitted',
       payout: {
         id: payout.id,
         amount: decimalToNumber(payout.amount),
