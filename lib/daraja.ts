@@ -63,11 +63,13 @@ function generateDarajaSecurityCredential(
   return encrypted.toString('base64')
 }
 
-function getEnvValue(keys: string[]): string {
+function getEnvValue(keys: string[], options: { trim?: boolean } = {}): string {
+  const trim = options.trim ?? true
+
   for (const key of keys) {
     const value = process.env[key]
     if (value && value.trim().length > 0) {
-      return value.trim()
+      return trim ? value.trim() : value
     }
   }
   return ''
@@ -143,7 +145,9 @@ export function getDarajaConfig(): DarajaConfig {
     getEnvValue(withSuffix(environment, 'DARAJA_TIMEOUT_URL')) ||
     `${callbackBaseUrl}/api/webhooks/daraja/timeout`
 
-  const configuredSecurityCredential = getEnvValue(withSuffix(environment, 'DARAJA_SECURITY_CREDENTIAL'))
+  const configuredSecurityCredential = getEnvValue(withSuffix(environment, 'DARAJA_SECURITY_CREDENTIAL'), {
+    trim: false,
+  })
   const initiatorPassword = getEnvValue(withSuffix(environment, 'DARAJA_INITIATOR_PASSWORD'))
   const certificatePem = getEnvValue(withSuffix(environment, 'DARAJA_PUBLIC_CERTIFICATE'))
 
@@ -278,7 +282,60 @@ export async function initiateDarajaB2CTransfer(
 ): Promise<DarajaB2CResponse> {
   const config = getDarajaConfig()
   const accessToken = await getDarajaAccessToken(config)
-  const b2cUrl = `${config.baseUrl}/mpesa/b2c/v3/paymentrequest`
+  const b2cUrl = `${config.baseUrl}/mpesa/b2c/v1/paymentrequest`
+
+  if (config.environment === 'sandbox' && config.shortcode !== '600000') {
+    throw new Error(
+      `Invalid sandbox PartyA shortcode: expected "600000" as string, got "${config.shortcode}"`
+    )
+  }
+
+  if (!config.securityCredential || typeof config.securityCredential !== 'string') {
+    throw new Error('Daraja SecurityCredential is undefined or invalid')
+  }
+
+  if (/\s/.test(config.securityCredential)) {
+    throw new Error(
+      'Daraja SecurityCredential contains whitespace. Remove spaces/newlines to avoid credential corruption.'
+    )
+  }
+
+  const requestPayload = {
+    OriginatorConversationID: payload.reference,
+    InitiatorName: config.initiatorName,
+    SecurityCredential: config.securityCredential,
+    CommandID: config.commandId,
+    Amount: Math.round(payload.amount),
+    PartyA: config.shortcode,
+    PartyB: payload.phoneNumber,
+    Remarks: payload.remarks,
+    QueueTimeOutURL: config.timeoutUrl,
+    ResultURL: config.resultUrl,
+    Occasion: payload.occasion || 'SalesAgentWithdrawal',
+  }
+
+  const requestBody = JSON.stringify(requestPayload)
+  const parsedPayload = JSON.parse(requestBody) as typeof requestPayload
+
+  if (parsedPayload.SecurityCredential !== config.securityCredential) {
+    throw new Error('Daraja SecurityCredential was modified during request serialization')
+  }
+
+  console.log('🧾 Daraja B2C preflight check', {
+    environment: config.environment,
+    endpoint: b2cUrl,
+    initiatorName: requestPayload.InitiatorName,
+    commandId: requestPayload.CommandID,
+    partyA: requestPayload.PartyA,
+    partyAType: typeof requestPayload.PartyA,
+    authorizationHeader: 'Bearer <access_token>',
+    securityCredentialDefined: typeof config.securityCredential === 'string',
+    securityCredentialLength: config.securityCredential.length,
+    securityCredentialModifiedInSerialization:
+      parsedPayload.SecurityCredential !== config.securityCredential,
+  })
+
+  console.log('📤 Daraja B2C request payload', requestPayload)
 
   const response = await fetchWithRetry(
     b2cUrl,
@@ -288,19 +345,7 @@ export async function initiateDarajaB2CTransfer(
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        OriginatorConversationID: payload.reference,
-        InitiatorName: config.initiatorName,
-        SecurityCredential: config.securityCredential,
-        CommandID: config.commandId,
-        Amount: Math.round(payload.amount),
-        PartyA: config.shortcode,
-        PartyB: payload.phoneNumber,
-        Remarks: payload.remarks,
-        QueueTimeOutURL: config.timeoutUrl,
-        ResultURL: config.resultUrl,
-        Occasion: payload.occasion || 'SalesAgentWithdrawal',
-      }),
+      body: requestBody,
     },
     { retries: 2, retryDelayMs: 1000 }
   )
