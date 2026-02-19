@@ -4,6 +4,7 @@ const DARAJA_LIVE_BASE_URL = 'https://api.safaricom.co.ke'
 import { constants, publicEncrypt } from 'crypto'
 
 type DarajaEnvironment = 'sandbox' | 'live'
+type DarajaCommandId = 'BusinessPayment' | 'SalaryPayment' | 'PromotionPayment'
 
 interface RetryOptions {
   retries?: number
@@ -18,7 +19,7 @@ export interface DarajaConfig {
   shortcode: string
   initiatorName: string
   securityCredential: string
-  commandId: string
+  commandId: DarajaCommandId
   resultUrl: string
   timeoutUrl: string
   callbackToken?: string
@@ -120,6 +121,15 @@ function withSuffix(env: DarajaEnvironment, baseKey: string): string[] {
   ]
 }
 
+function getDarajaCommandId(environment: DarajaEnvironment): DarajaCommandId {
+  const raw = getEnvValue(withSuffix(environment, 'DARAJA_COMMAND_ID'))
+  if (raw === 'SalaryPayment' || raw === 'PromotionPayment' || raw === 'BusinessPayment') {
+    return raw
+  }
+
+  return 'BusinessPayment'
+}
+
 export function getDarajaConfig(): DarajaConfig {
   const environment = getDarajaEnvironment()
   const baseUrl = environment === 'live' ? DARAJA_LIVE_BASE_URL : DARAJA_SANDBOX_BASE_URL
@@ -160,7 +170,7 @@ export function getDarajaConfig(): DarajaConfig {
     shortcode: getEnvValue(withSuffix(environment, 'DARAJA_SHORTCODE')),
     initiatorName: getEnvValue(withSuffix(environment, 'DARAJA_INITIATOR_NAME')),
     securityCredential,
-    commandId: getEnvValue(withSuffix(environment, 'DARAJA_COMMAND_ID')) || 'BusinessPayment',
+    commandId: getDarajaCommandId(environment),
     resultUrl,
     timeoutUrl,
     callbackToken: getEnvValue(withSuffix(environment, 'DARAJA_CALLBACK_TOKEN')) || undefined,
