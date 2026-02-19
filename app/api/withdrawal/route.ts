@@ -211,10 +211,23 @@ export async function POST(request: NextRequest) {
       })
 
       if (!darajaResponse.accepted) {
+        const rawErrorCode =
+          String(darajaResponse.raw?.errorCode || darajaResponse.raw?.ResultCode || '').trim()
+        const rawErrorMessage =
+          String(darajaResponse.raw?.errorMessage || darajaResponse.raw?.ResultDesc || '').trim()
+
         const failureMessage =
           darajaResponse.responseDescription ||
           darajaResponse.customerMessage ||
+          rawErrorMessage ||
           'Daraja B2C request rejected'
+
+        const isInvalidInitiatorError =
+          rawErrorCode === '2001' || /initiator information is invalid/i.test(failureMessage)
+
+        const userFixHint = isInvalidInitiatorError
+          ? 'Daraja rejected initiator credentials. Confirm InitiatorName exists on the same shortcode and regenerate SecurityCredential from that initiator password using Safaricom\'s B2C public certificate for the active environment (sandbox/live).'
+          : null
 
         await prisma.withdrawal.update({
           where: { id: withdrawal.id },
@@ -234,6 +247,8 @@ export async function POST(request: NextRequest) {
           {
             error: 'Daraja B2C request failed',
             details: failureMessage,
+            code: rawErrorCode || null,
+            fixHint: userFixHint,
             provider: 'daraja',
           },
           { status: 400 }
