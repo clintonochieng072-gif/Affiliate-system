@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
           rawErrorCode === '2001' || /initiator information is invalid/i.test(failureMessage)
 
         const userFixHint = isInvalidInitiatorError
-          ? 'Daraja rejected initiator credentials. Confirm InitiatorName exists on the same shortcode and regenerate SecurityCredential from that initiator password using Safaricom\'s B2C public certificate for the active environment (sandbox/live).'
+          ? 'Daraja rejected initiator credentials. Confirm InitiatorName exists on the same shortcode, then either set DARAJA_SECURITY_CREDENTIAL_<ENV> directly or set both DARAJA_INITIATOR_PASSWORD_<ENV> and DARAJA_PUBLIC_CERTIFICATE_<ENV> so the credential is generated automatically for the active environment.'
           : null
 
         await prisma.withdrawal.update({

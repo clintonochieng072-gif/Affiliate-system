@@ -1,6 +1,8 @@
 const DARAJA_SANDBOX_BASE_URL = 'https://sandbox.safaricom.co.ke'
 const DARAJA_LIVE_BASE_URL = 'https://api.safaricom.co.ke'
 
+import { constants, publicEncrypt } from 'crypto'
+
 type DarajaEnvironment = 'sandbox' | 'live'
 
 interface RetryOptions {
@@ -38,6 +40,26 @@ export interface DarajaB2CResponse {
   responseDescription?: string
   customerMessage?: string
   raw: any
+}
+
+function normalizePemFromEnv(value: string): string {
+  return value.replace(/\\n/g, '\n').trim()
+}
+
+function generateDarajaSecurityCredential(
+  initiatorPassword: string,
+  certificatePem: string
+): string {
+  const normalizedPem = normalizePemFromEnv(certificatePem)
+  const encrypted = publicEncrypt(
+    {
+      key: normalizedPem,
+      padding: constants.RSA_PKCS1_PADDING,
+    },
+    Buffer.from(initiatorPassword, 'utf8')
+  )
+
+  return encrypted.toString('base64')
 }
 
 function getEnvValue(keys: string[]): string {
@@ -111,6 +133,24 @@ export function getDarajaConfig(): DarajaConfig {
     getEnvValue(withSuffix(environment, 'DARAJA_TIMEOUT_URL')) ||
     `${callbackBaseUrl}/api/webhooks/daraja/timeout`
 
+  const configuredSecurityCredential = getEnvValue(withSuffix(environment, 'DARAJA_SECURITY_CREDENTIAL'))
+  const initiatorPassword = getEnvValue(withSuffix(environment, 'DARAJA_INITIATOR_PASSWORD'))
+  const certificatePem = getEnvValue(withSuffix(environment, 'DARAJA_PUBLIC_CERTIFICATE'))
+
+  let securityCredential = configuredSecurityCredential
+
+  if (!securityCredential && initiatorPassword && certificatePem) {
+    try {
+      securityCredential = generateDarajaSecurityCredential(initiatorPassword, certificatePem)
+    } catch (error) {
+      throw new Error(
+        `Failed to generate Daraja security credential (${environment}): ${
+          error instanceof Error ? error.message : 'Invalid certificate or initiator password'
+        }`
+      )
+    }
+  }
+
   const config: DarajaConfig = {
     environment,
     baseUrl,
@@ -119,7 +159,7 @@ export function getDarajaConfig(): DarajaConfig {
     consumerSecret: getEnvValue(withSuffix(environment, 'DARAJA_CONSUMER_SECRET')),
     shortcode: getEnvValue(withSuffix(environment, 'DARAJA_SHORTCODE')),
     initiatorName: getEnvValue(withSuffix(environment, 'DARAJA_INITIATOR_NAME')),
-    securityCredential: getEnvValue(withSuffix(environment, 'DARAJA_SECURITY_CREDENTIAL')),
+    securityCredential,
     commandId: getEnvValue(withSuffix(environment, 'DARAJA_COMMAND_ID')) || 'BusinessPayment',
     resultUrl,
     timeoutUrl,
@@ -136,6 +176,16 @@ export function getDarajaConfig(): DarajaConfig {
 
   const missing = required.filter(([, value]) => !value).map(([name]) => name)
   if (missing.length > 0) {
+    if (
+      missing.includes('securityCredential') &&
+      !configuredSecurityCredential &&
+      !(initiatorPassword && certificatePem)
+    ) {
+      throw new Error(
+        `Daraja configuration is incomplete (${environment}): missing securityCredential (set DARAJA_SECURITY_CREDENTIAL_${environment === 'live' ? 'LIVE' : 'SANDBOX'} OR both DARAJA_INITIATOR_PASSWORD_${environment === 'live' ? 'LIVE' : 'SANDBOX'} and DARAJA_PUBLIC_CERTIFICATE_${environment === 'live' ? 'LIVE' : 'SANDBOX'})`
+      )
+    }
+
     throw new Error(`Daraja configuration is incomplete (${environment}): missing ${missing.join(', ')}`)
   }
 
