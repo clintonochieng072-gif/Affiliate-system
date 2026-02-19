@@ -56,18 +56,21 @@ export async function GET(request: NextRequest) {
       0
     )
 
-    // Calculate total withdrawals (completed and processing)
+    // Fetch all withdrawals for history and balance calculations
     const withdrawals = await prisma.withdrawal.findMany({
       where: {
         affiliateId: salesAgent.id,
-        status: { in: ['completed', 'processing'] },
       },
       orderBy: {
         createdAt: 'desc',
       },
     })
 
-    const totalWithdrawn = withdrawals.reduce(
+    const withdrawalsAffectingBalance = withdrawals.filter(
+      (w) => w.status === 'completed' || w.status === 'processing'
+    )
+
+    const totalWithdrawn = withdrawalsAffectingBalance.reduce(
       (sum, w) => sum + decimalToNumber(w.requestedAmount),
       0
     )
@@ -109,6 +112,7 @@ export async function GET(request: NextRequest) {
         platformFee: decimalToNumber(w.platformFee),
         mpesaNumber: w.mpesaNumber,
         status: w.status,
+        failureReason: w.failureReason,
         createdAt: w.createdAt.toISOString(),
       })),
     }

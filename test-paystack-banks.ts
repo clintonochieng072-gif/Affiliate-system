@@ -5,6 +5,8 @@
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
 
+
+export {}
 async function testPaystackBanks() {
   if (!PAYSTACK_SECRET_KEY) {
     console.error('❌ PAYSTACK_SECRET_KEY not found in environment')

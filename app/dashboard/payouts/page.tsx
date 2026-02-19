@@ -57,7 +57,7 @@ export default function PayoutsPage() {
       return
     }
 
-    // Validate mobile money number (basic check - Paystack will do final validation)
+    // Validate mobile money number (basic check - Daraja will do final validation)
     const cleanedMpesa = mpesaNumber.replace(/\D/g, '')
     
     console.log('🔍 Frontend validation:', {
@@ -103,7 +103,7 @@ export default function PayoutsPage() {
         throw new Error(errorMsg)
       }
 
-      setMessage({ type: 'success', text: 'Withdrawal requested successfully! Funds will be sent via M-PESA within 24 hours.' })
+      setMessage({ type: 'success', text: 'Withdrawal queued successfully via Daraja B2C. Status will update automatically from callback results.' })
       setPayoutAmount('')
       setMpesaNumber('')
       mutate() // Refresh data
@@ -157,7 +157,7 @@ export default function PayoutsPage() {
             </div>
           </div>
           <p className="text-emerald-100 text-sm">
-            Minimum withdrawal: KSh 10 (test) or KSh 140+ • Funds sent via M-PESA within 24 hours
+            Minimum withdrawal: KSh 10 (test) or KSh 140+ • Funds sent via M-PESA after Daraja processing
           </p>
         </div>
 
@@ -291,26 +291,49 @@ export default function PayoutsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {payouts.map((payout: any) => (
+                  {payouts.map((payout: any) => {
+                    const status = String(payout.status || '').toLowerCase()
+
+                    const statusConfig =
+                      status === 'completed'
+                        ? {
+                            className: 'bg-green-900/30 text-green-400 border border-green-500/30',
+                            icon: <CheckCircle2 className="w-3 h-3" />,
+                            label: 'processed',
+                          }
+                        : status === 'failed'
+                        ? {
+                            className: 'bg-red-900/30 text-red-400 border border-red-500/30',
+                            icon: <AlertCircle className="w-3 h-3" />,
+                            label: 'failed',
+                          }
+                        : status === 'pending'
+                        ? {
+                            className: 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/30',
+                            icon: <Clock className="w-3 h-3" />,
+                            label: 'pending',
+                          }
+                        : {
+                            className: 'bg-blue-900/30 text-blue-400 border border-blue-500/30',
+                            icon: <Clock className="w-3 h-3" />,
+                            label: 'processing',
+                          }
+
+                    return (
                     <tr key={payout.id} className="hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4 text-sm font-semibold text-white">
                         {formatCurrency(payout.requestedAmount)}
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full ${
-                            payout.status === 'paid'
-                              ? 'bg-green-900/30 text-green-400 border border-green-500/30'
-                              : 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/30'
-                          }`}
+                          className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full ${statusConfig.className}`}
                         >
-                          {payout.status === 'paid' ? (
-                            <CheckCircle2 className="w-3 h-3" />
-                          ) : (
-                            <Clock className="w-3 h-3" />
-                          )}
-                          {payout.status}
+                          {statusConfig.icon}
+                          {statusConfig.label}
                         </span>
+                        {payout.failureReason && (
+                          <p className="text-xs text-red-400 mt-2">{payout.failureReason}</p>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-400">
                         {new Date(payout.createdAt).toLocaleDateString('en-US', {
@@ -322,7 +345,8 @@ export default function PayoutsPage() {
                         })}
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -339,7 +363,8 @@ export default function PayoutsPage() {
             <li>• Minimum withdrawal amount is KSh 140 (2 active subscriptions)</li>
             <li>• Withdrawals must be in multiples of KSh 140</li>
             <li>• Platform fee: KSh 30 per KSh 140 block (you receive KSh 110)</li>
-            <li>• Withdrawals are processed within 24 hours</li>
+            <li>• Daraja callback states: pending, processing, processed, failed</li>
+            <li>• Withdrawals are usually processed within 24 hours</li>
             <li>• Funds are sent via M-PESA mobile money transfer</li>
             <li>• Provide a valid M-PESA number (format: 07XX XXX XXX)</li>
           </ul>

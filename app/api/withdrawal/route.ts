@@ -3,25 +3,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { decimalToNumber } from '@/lib/utils'
+import {
+  initiateDarajaB2CTransfer,
+  normalizeKenyanPhoneForDaraja,
+} from '@/lib/daraja'
 
 /**
  * M-PESA Withdrawal System
  * - 70 KES per active subscription
  * - Withdrawals in multiples of 140 KES
- * - 30 KES platform fee per 140 block (stays in Paystack)
+ * - 30 KES platform fee per 140 block (retained by platform)
  * - 110 KES payout per 140 block (sent to sales agent)
- * - Paystack transfer fees: 1-1,500 = 20 KES, 1,501-20,000 = 40 KES (paid by system)
+ * - Transfer fees: 1-1,500 = 20 KES, 1,501-20,000 = 40 KES (paid by system)
  */
 
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
-const COMMISSION_PER_REFERRAL = 70 // KES
 const WITHDRAWAL_BLOCK_SIZE = 140 // KES (2 active subscriptions)
-const PLATFORM_FEE_PER_BLOCK = 30 // KES (STAYS IN PAYSTACK ACCOUNT)
+const PLATFORM_FEE_PER_BLOCK = 30 // KES (retained by platform)
 
 /**
- * Calculate Paystack transfer fee based on amount
+ * Calculate transfer fee based on amount
  */
-function calculatePaystackTransferFee(amount: number): number {
+function calculateTransferFee(amount: number): number {
   if (amount >= 1 && amount <= 1500) {
     return 20 // KES
   } else if (amount >= 1501 && amount <= 20000) {
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     // Validate mobile money number format
     // Accept any reasonable phone number format (9-15 digits)
-    // Paystack will do final validation for M-PESA compatibility
+    // Daraja will do final validation for M-PESA compatibility
     const cleanedNumber = mpesaNumber.replace(/\D/g, '')
     
     console.log('🔍 Validating mobile money number:', {
@@ -101,27 +103,19 @@ export async function POST(request: NextRequest) {
     
     console.log('✅ Number format validated, length:', cleanedNumber.length)
 
-    // Format for Paystack Kenya M-PESA
-    // IMPORTANT: Paystack M-PESA requires LOCAL format (07XX or 01XX), NOT international (254XX)
+    // Format for Daraja M-PESA
+    // Daraja expects international format 2547XXXXXXXX / 2541XXXXXXXX
     let formattedNumber = cleanedNumber
     
     if (/^254[17]\d{8}$/.test(cleanedNumber)) {
-      // 254XXXXXXXXX -> 0XXXXXXXXX (convert international to local)
-      formattedNumber = '0' + cleanedNumber.substring(3)
-      console.log('📱 Converted international to local format:', formattedNumber)
-    } else if (/^[17]\d{8}$/.test(cleanedNumber)) {
-      // 7XXXXXXXX or 1XXXXXXXX -> 07XXXXXXXX or 01XXXXXXXX
-      formattedNumber = '0' + cleanedNumber
-      console.log('📱 Added leading zero:', formattedNumber)
-    } else if (/^0[17]\d{8}$/.test(cleanedNumber)) {
-      // Already in correct format 07XXXXXXXX or 01XXXXXXXX
       formattedNumber = cleanedNumber
-      console.log('📱 Already in correct local format:', formattedNumber)
+      console.log('📱 Already in international format:', formattedNumber)
     } else {
-      console.log('⚠️ Number format may not be Kenyan M-PESA compatible:', formattedNumber)
+      formattedNumber = normalizeKenyanPhoneForDaraja(cleanedNumber)
+      console.log('📱 Normalized number for Daraja:', formattedNumber)
     }
     
-    console.log('📞 Final number to send to Paystack:', formattedNumber, '(Length:', formattedNumber.length, ')')
+    console.log('📞 Final number to send to Daraja:', formattedNumber, '(Length:', formattedNumber.length, ')')
 
     // Get sales agent with paid sales activity
     const salesAgent = await prisma.affiliate.findUnique({
@@ -191,7 +185,7 @@ export async function POST(request: NextRequest) {
       payoutAmount = amount - platformFee
     }
     
-    const paystackTransferFee = calculatePaystackTransferFee(payoutAmount)  // Paid by system
+    const transferFee = calculateTransferFee(payoutAmount)  // Paid by system
 
     // Create withdrawal record with PENDING status and deduct balance atomically
     // Balance is deducted immediately to prevent double withdrawals
@@ -201,67 +195,79 @@ export async function POST(request: NextRequest) {
         requestedAmount: amount,
         platformFee: platformFee,
         payoutAmount: payoutAmount,
-        paystackTransferFee: paystackTransferFee,
+        paystackTransferFee: transferFee,
         mpesaNumber: formattedNumber,
-        status: 'pending',  // Will be updated to 'processing' after Paystack call
+        status: 'pending',
       },
     })
 
-    // Send to Paystack Transfers API
-    if (!PAYSTACK_SECRET_KEY) {
+    // Initiate Daraja B2C transfer (sandbox/live controlled via env variables)
+    try {
+      const darajaResponse = await initiateDarajaB2CTransfer({
+        amount: payoutAmount,
+        phoneNumber: formattedNumber,
+        reference: withdrawal.id,
+        remarks: `Sales withdrawal ${withdrawal.id}`,
+      })
+
+      if (!darajaResponse.accepted) {
+        const failureMessage =
+          darajaResponse.responseDescription ||
+          darajaResponse.customerMessage ||
+          'Daraja B2C request rejected'
+
+        await prisma.withdrawal.update({
+          where: { id: withdrawal.id },
+          data: {
+            status: 'failed',
+            failureReason: failureMessage,
+            paystackReference: darajaResponse.conversationId || null,
+          },
+        })
+
+        console.error('❌ Daraja initiation rejected', {
+          withdrawalId: withdrawal.id,
+          response: darajaResponse.raw,
+        })
+
+        return NextResponse.json(
+          {
+            error: 'Daraja B2C request failed',
+            details: failureMessage,
+            provider: 'daraja',
+          },
+          { status: 400 }
+        )
+      }
+
       await prisma.withdrawal.update({
         where: { id: withdrawal.id },
         data: {
-          status: 'failed',
-          failureReason: 'Paystack secret key not configured',
+          paystackReference: darajaResponse.conversationId || withdrawal.id,
+          status: 'processing',
+          failureReason: null,
         },
       })
-      return NextResponse.json(
-        { error: 'Paystack not configured', details: 'Payment provider configuration missing' },
-        { status: 500 }
-      )
-    }
 
-    // Create transfer recipient for M-PESA
-    // Paystack supports M-PESA Kenya with type: 'mobile_money' and bank_code: 'MPESA'
-    // Account number should be in format: 254XXXXXXXXX (12 digits)
-    const recipientPayload = {
-      type: 'mobile_money',
-      name: salesAgent.name,
-      account_number: formattedNumber,
-      bank_code: 'MPESA',
-      currency: 'KES',
-    }
+      return NextResponse.json({
+        success: true,
+        withdrawal: {
+          id: withdrawal.id,
+          reference: withdrawal.id,
+          requestedAmount: amount,
+          platformFee: platformFee,
+          payoutAmount: payoutAmount,
+          transferFee: transferFee,
+          mpesaNumber: formattedNumber,
+          status: 'processing',
+          provider: 'daraja',
+          providerReference: darajaResponse.conversationId || null,
+          message: 'Withdrawal initiated via Daraja B2C. Awaiting callback confirmation.',
+        },
+      })
+    } catch (providerError: any) {
+      const errorMessage = providerError?.message || 'Daraja request failed'
 
-    console.log('🚀 Creating Paystack recipient:', {
-      name: salesAgent.name,
-      account_number: formattedNumber,
-      bank_code: 'MPESA',
-      currency: 'KES',
-      type: 'mobile_money'
-    })
-
-    const recipientResponse = await fetch('https://api.paystack.co/transferrecipient', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(recipientPayload),
-    })
-
-    const recipientData = await recipientResponse.json()
-
-    console.log('📥 Paystack recipient response:', {
-      status: recipientData.status,
-      message: recipientData.message,
-      data: recipientData.data,
-      fullResponse: recipientData
-    })
-
-    if (!recipientData.status) {
-      const errorMessage = recipientData.message || 'Failed to create recipient'
-      
       await prisma.withdrawal.update({
         where: { id: withdrawal.id },
         data: {
@@ -270,79 +276,16 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      console.error('Paystack recipient creation failed:', {
-        error: errorMessage,
-        fullResponse: recipientData,
+      console.error('❌ Daraja transfer error:', {
+        withdrawalId: withdrawal.id,
+        error: providerError,
       })
 
       return NextResponse.json(
-        { 
-          error: 'Failed to create transfer recipient', 
-          details: errorMessage,
-          paystackError: recipientData 
-        },
-        { status: 400 }
+        { error: 'Withdrawal provider error', details: errorMessage },
+        { status: 500 }
       )
     }
-
-    // Initiate transfer
-    // IMPORTANT: We only send payoutAmount to sales agent, NOT the full requested amount
-    // Platform fee stays in the system's Paystack account
-    const transferResponse = await fetch('https://api.paystack.co/transfer', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        source: 'balance',
-        amount: Math.round(payoutAmount * 100), // Convert to cents - ONLY payout amount, NOT requested amount
-        recipient: recipientData.data.recipient_code,
-        reason: `Sales earnings withdrawal - ${numberOfBlocks} blocks (Platform fee: ${platformFee} KES retained)`,
-        reference: withdrawal.id, // Use our withdrawal ID as reference
-      }),
-    })
-
-    const transferData = await transferResponse.json()
-
-    if (!transferData.status) {
-      await prisma.withdrawal.update({
-        where: { id: withdrawal.id },
-        data: {
-          status: 'failed',
-          failureReason: transferData.message || 'Transfer failed',
-        },
-      })
-
-      return NextResponse.json(
-        { error: 'Transfer failed', details: transferData.message },
-        { status: 400 }
-      )
-    }
-
-    // Update withdrawal with Paystack reference
-    await prisma.withdrawal.update({
-      where: { id: withdrawal.id },
-      data: {
-        paystackReference: transferData.data.transfer_code,
-        status: 'processing', // Will be updated by internal webhook
-      },
-    })
-
-    return NextResponse.json({
-      success: true,
-      withdrawal: {
-        id: withdrawal.id,
-        reference: withdrawal.id, // Used for webhook matching
-        requestedAmount: amount,
-        platformFee: platformFee,
-        payoutAmount: payoutAmount,
-        transferFee: paystackTransferFee,
-        mpesaNumber: formattedNumber,
-        status: 'processing',
-        message: 'Withdrawal initiated. Status will be updated via webhook.',
-      },
-    })
 
   } catch (error: any) {
     console.error('Withdrawal error:', error)

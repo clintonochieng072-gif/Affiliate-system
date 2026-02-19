@@ -3,6 +3,8 @@
  * Run: npx tsx test-mpesa-recipient.ts
  */
 
+export {}
+
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
 
 async function testCreateRecipient() {
