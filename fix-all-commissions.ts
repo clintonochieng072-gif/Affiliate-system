@@ -76,34 +76,20 @@ async function fixAllCommissions() {
       const affiliate = await prisma.affiliate.findUnique({
         where: { id: affiliateId },
         include: {
-          referrals: {
-            where: { status: 'paid' },
-          },
-          withdrawals: {
-            where: {
-              status: {
-                in: ['completed', 'processing'],
-              },
-            },
-          },
+          referrals: true,
+          withdrawals: true,
         },
       })
 
       if (affiliate) {
-        const totalEarnings = affiliate.referrals.reduce(
-          (sum, ref) => sum + parseFloat(ref.commissionAmount.toString()),
-          0
-        )
-        const totalWithdrawn = affiliate.withdrawals.reduce(
-          (sum, w) => sum + parseFloat(w.requestedAmount.toString()),
-          0
-        )
-        const availableBalance = totalEarnings - totalWithdrawn
+        const totalEarnings = parseFloat(affiliate.totalEarned.toString())
+        const pendingBalance = parseFloat(affiliate.pendingBalance.toString())
+        const availableBalance = parseFloat(affiliate.availableBalance.toString())
 
         console.log(`   ${affiliate.name} (${affiliate.email}):`)
         console.log(`   - Total referrals: ${affiliate.referrals.length}`)
         console.log(`   - Total earnings: ${totalEarnings} KES`)
-        console.log(`   - Total withdrawn: ${totalWithdrawn} KES`)
+        console.log(`   - Pending balance: ${pendingBalance} KES`)
         console.log(`   - Available balance: ${availableBalance} KES`)
         console.log('')
       }

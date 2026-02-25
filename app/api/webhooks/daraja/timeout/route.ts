@@ -8,10 +8,8 @@ interface DarajaTimeoutPayload {
 
 /**
  * POST /api/webhooks/daraja/timeout
- * Daraja timeout callback endpoint.
- *
- * NOTE: Timeout means we have no final transfer verdict yet.
- * We keep the withdrawal in 'pending' for reconciliation/retry workflows.
+ * Timeout callback is acknowledged without changing state.
+ * Final transitions are handled by result callbacks/webhooks only.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +27,7 @@ export async function POST(request: NextRequest) {
       where: {
         OR: [
           { id: originatorConversationId || '' },
-          { paystackReference: conversationId || '' },
+          { providerReference: conversationId || '' },
         ],
       },
     })
@@ -42,13 +40,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Withdrawal not found' }, { status: 404 })
     }
 
-    if (withdrawal.status !== 'completed' && withdrawal.status !== 'failed') {
+    if (conversationId && conversationId !== withdrawal.providerReference) {
       await prisma.withdrawal.update({
         where: { id: withdrawal.id },
         data: {
-          status: 'pending',
-          failureReason: 'Daraja callback timeout: awaiting final status confirmation',
-          paystackReference: conversationId || withdrawal.paystackReference,
+          providerReference: conversationId,
+          failureReason: withdrawal.failureReason || 'Daraja callback timeout: awaiting final status',
         },
       })
     }

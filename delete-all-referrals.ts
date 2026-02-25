@@ -47,7 +47,7 @@ async function deleteAllReferrals() {
       console.log(`${index + 1}. ${ref.affiliate.name} (${ref.affiliate.email})`)
       console.log(`   User: ${ref.userEmail}`)
       console.log(`   Commission: ${ref.commissionAmount} KES`)
-      console.log(`   Reference: ${ref.paymentReference}`)
+      console.log(`   Reference: ${ref.reference}`)
       console.log(`   Status: ${ref.status}`)
       console.log(`   Created: ${ref.createdAt.toLocaleString()}`)
       console.log('')

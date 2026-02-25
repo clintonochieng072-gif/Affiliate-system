@@ -10,11 +10,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AffiliateLevel {
+  LEVEL_1
+  LEVEL_2
+}
+
+enum WithdrawalStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
 // Affiliate model - stores affiliate user information
 model Affiliate {
   id        String   @id @default(uuid())
   email     String   @unique
   name      String
+  level     AffiliateLevel @default(LEVEL_1)
+  pendingBalance   Decimal  @default(0) @db.Decimal(12, 2)
+  availableBalance Decimal  @default(0) @db.Decimal(12, 2)
+  totalEarned      Decimal  @default(0) @db.Decimal(12, 2)
   createdAt DateTime @default(now())
   
   // Relations
@@ -25,6 +41,36 @@ model Affiliate {
 
   @@index([email])
   @@map("affiliates")
+}
+
+model Plan {
+  id          String   @id @default(uuid())
+  planType    String   @unique
+  name        String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  commissionRules CommissionRule[]
+  referrals       Referral[]
+
+  @@index([planType])
+  @@index([isActive])
+  @@map("plans")
+}
+
+model CommissionRule {
+  id             String         @id @default(uuid())
+  affiliateLevel AffiliateLevel
+  planId         String
+  rewardAmount   Decimal        @db.Decimal(10, 2)
+  createdAt      DateTime       @default(now())
+
+  plan           Plan           @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([affiliateLevel, planId])
+  @@index([affiliateLevel])
+  @@index([planId])
+  @@map("commission_rules")
 }
 
 // Product model - SaaS products available for promotion
@@ -69,20 +115,23 @@ model AffiliateLink {
 model Referral {
   id                String   @id @default(uuid())
   affiliateId       String
+  planId            String
+  planType          String
   userEmail         String
-  productSlug       String
-  amountPaid        Decimal  @db.Decimal(10, 2)
   commissionAmount  Decimal  @db.Decimal(10, 2)
-  paymentReference  String   @unique
-  status            String   @default("pending") // 'pending' or 'paid'
+  reference         String   @unique
+  status            String   @default("pending")
   createdAt         DateTime @default(now())
   
   // Relations
   affiliate         Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  plan              Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
 
   @@index([affiliateId])
+  @@index([planId])
+  @@index([planType])
   @@index([status])
-  @@index([paymentReference])
+  @@index([reference])
   @@index([createdAt])
   @@map("referrals")
 }
@@ -103,28 +152,24 @@ model Payout {
   @@map("payouts")
 }
 
-// Withdrawal model - M-PESA withdrawals with platform fees
-// Platform fee stays in system's Paystack account - only payoutAmount is transferred
+// Withdrawal model - stateful withdrawal lifecycle with strict transitions
 model Withdrawal {
-  id                  String   @id @default(uuid())
-  affiliateId         String
-  requestedAmount     Decimal  @db.Decimal(10, 2) // Total amount requested (e.g., 140, 280, 420)
-  platformFee         Decimal  @db.Decimal(10, 2) // Platform fee retained by system (30 KES per 140 block)
-  payoutAmount        Decimal  @db.Decimal(10, 2) // Amount sent to affiliate (requestedAmount - platformFee)
-  paystackTransferFee Decimal  @db.Decimal(10, 2) // Transfer fee paid by system (20 or 40 KES)
-  mpesaNumber         String                       // Affiliate's M-PESA phone number
-  status              String   @default("pending") // 'pending', 'processing', 'completed', 'failed'
-  paystackReference   String?  @unique             // Paystack transfer reference ID
-  failureReason       String?                      // Error message if failed
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                String           @id @default(uuid())
+  affiliateId       String
+  amount            Decimal          @db.Decimal(10, 2)
+  mpesaNumber       String
+  status            WithdrawalStatus @default(pending)
+  providerReference String?          @unique
+  failureReason     String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
   
   // Relations
-  affiliate           Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  affiliate          Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
 
   @@index([affiliateId])
   @@index([status])
-  @@index([paystackReference])
+  @@index([providerReference])
   @@index([createdAt])
   @@map("withdrawals")
 }

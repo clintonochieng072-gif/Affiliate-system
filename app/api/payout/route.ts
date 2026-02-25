@@ -1,125 +1,18 @@
-import { prisma } from '@/lib/prisma'
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { decimalToNumber } from '@/lib/utils'
+import { NextResponse } from 'next/server'
 
-/**
- * API endpoint to process sales agent payouts via Paystack
- * Uses new Referral/Payout schema with PostgreSQL
- */
-export async function POST(request: NextRequest) {
-  try {
-    // Authenticate user using NextAuth
-    const session = await getServerSession(authOptions)
+export async function POST() {
+  return NextResponse.json(
+    {
+      error: 'Legacy payout route has been replaced. Use /api/withdrawal.',
+    },
+    { status: 410 }
+  )
+}
 
-    if (!session || !session.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-    const { amount } = body
-
-    // Get sales agent with paid sales activity and payouts
-    const salesAgent = await prisma.affiliate.findUnique({
-      where: { email: session.user.email },
-      include: {
-        referrals: {
-          where: { status: 'paid' },
-        },
-        payouts: {
-          where: { status: 'paid' },
-        },
-      },
-    })
-
-    if (!salesAgent) {
-      return NextResponse.json(
-        { error: 'Sales agent not found' },
-        { status: 404 }
-      )
-    }
-
-    // Calculate available balance
-    const totalEarnings = salesAgent.referrals.reduce(
-      (sum, r) => sum + decimalToNumber(r.commissionAmount),
-      0
-    )
-    const totalPayouts = salesAgent.payouts.reduce(
-      (sum, p) => sum + decimalToNumber(p.amount),
-      0
-    )
-    const availableBalance = totalEarnings - totalPayouts
-
-    // Validate payout amount
-    const minPayout = 5000 // Minimum 5000 KES
-    if (amount < minPayout) {
-      return NextResponse.json(
-        { error: `Minimum payout is ${minPayout} KES` },
-        { status: 400 }
-      )
-    }
-
-    if (amount > availableBalance) {
-      return NextResponse.json(
-        { error: 'Insufficient balance' },
-        { status: 400 }
-      )
-    }
-
-    // TODO: Integrate with Paystack Transfer API
-    // This is a placeholder for Paystack payout integration
-    const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY
-    
-    if (!paystackSecretKey) {
-      return NextResponse.json(
-        { error: 'Paystack not configured' },
-        { status: 500 }
-      )
-    }
-
-    // Create payout record
-    const payout = await prisma.payout.create({
-      data: {
-        affiliateId: salesAgent.id,
-        amount: amount,
-        status: 'pending', // Mark as pending until Paystack confirms
-      },
-    })
-
-    console.log('Payout request created:', {
-      payout_id: payout.id,
-      sales_agent_id: salesAgent.id,
-      amount,
-      email: salesAgent.email,
-    })
-
-    // In production: initiate Paystack transfer here
-    // For now, auto-mark as paid for testing
-    await prisma.payout.update({
-      where: { id: payout.id },
-      data: { status: 'paid' },
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Sales payout request submitted',
-      payout: {
-        id: payout.id,
-        amount: decimalToNumber(payout.amount),
-        status: 'paid',
-        createdAt: payout.createdAt.toISOString(),
-      },
-    })
-
-  } catch (error) {
-    console.error('Payout error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+export async function GET() {
+  return NextResponse.json({
+    service: 'Legacy payout endpoint',
+    status: 'deprecated',
+    replacement: '/api/withdrawal',
+  })
 }

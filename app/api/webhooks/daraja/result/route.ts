@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import { canTransitionWithdrawal } from '@/lib/withdrawal'
 
 interface DarajaResultPayload {
   Result?: {
@@ -14,22 +15,15 @@ interface DarajaResultPayload {
   ResultDesc?: string
 }
 
-/**
- * POST /api/webhooks/daraja/result
- * Daraja B2C result callback endpoint.
- *
- * NOTE: This route is provider-agnostic in terms of status transitions:
- * - ResultCode 0 => completed
- * - Any non-zero ResultCode => failed
- */
 export async function POST(request: NextRequest) {
   try {
     const payload: DarajaResultPayload = await request.json()
-
     const resultNode = payload.Result || payload
+
     const conversationId = resultNode.ConversationID || payload.ConversationID
     const originatorConversationId =
       resultNode.OriginatorConversationID || payload.OriginatorConversationID
+
     const resultCode = Number(resultNode.ResultCode ?? payload.ResultCode ?? -1)
     const resultDesc = resultNode.ResultDesc || payload.ResultDesc || 'No description from Daraja'
 
@@ -44,45 +38,75 @@ export async function POST(request: NextRequest) {
       where: {
         OR: [
           { id: originatorConversationId || '' },
-          { paystackReference: conversationId || '' },
+          { providerReference: conversationId || '' },
         ],
       },
     })
 
     if (!withdrawal) {
-      console.error('Daraja result callback: withdrawal not found', {
-        originatorConversationId,
-        conversationId,
-      })
       return NextResponse.json({ error: 'Withdrawal not found' }, { status: 404 })
     }
 
     const isSuccess = resultCode === 0
 
-    await prisma.withdrawal.update({
-      where: { id: withdrawal.id },
-      data: {
-        status: isSuccess ? 'completed' : 'failed',
-        failureReason: isSuccess ? null : `Daraja error ${resultCode}: ${resultDesc}`,
-        paystackReference: conversationId || withdrawal.paystackReference,
-      },
-    })
+    if (isSuccess) {
+      if (withdrawal.status === 'completed') {
+        return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' })
+      }
 
-    console.log('Daraja result callback processed', {
-      withdrawalId: withdrawal.id,
-      resultCode,
-      resultDesc,
-      status: isSuccess ? 'completed' : 'failed',
-      conversationId,
-      originatorConversationId,
-    })
+      if (!canTransitionWithdrawal(withdrawal.status, 'completed')) {
+        return NextResponse.json(
+          { error: `Invalid withdrawal transition from ${withdrawal.status} to completed` },
+          { status: 409 }
+        )
+      }
+
+      await prisma.withdrawal.update({
+        where: { id: withdrawal.id },
+        data: {
+          status: 'completed',
+          failureReason: null,
+          providerReference: conversationId || withdrawal.providerReference,
+        },
+      })
+    } else {
+      if (withdrawal.status === 'failed') {
+        return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' })
+      }
+
+      if (!canTransitionWithdrawal(withdrawal.status, 'failed')) {
+        return NextResponse.json(
+          { error: `Invalid withdrawal transition from ${withdrawal.status} to failed` },
+          { status: 409 }
+        )
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.withdrawal.update({
+          where: { id: withdrawal.id },
+          data: {
+            status: 'failed',
+            failureReason: `Daraja error ${resultCode}: ${resultDesc}`,
+            providerReference: conversationId || withdrawal.providerReference,
+          },
+        })
+
+        await tx.affiliate.update({
+          where: { id: withdrawal.affiliateId },
+          data: {
+            availableBalance: {
+              increment: withdrawal.amount,
+            },
+          },
+        })
+      })
+    }
 
     return NextResponse.json({
       ResultCode: 0,
       ResultDesc: 'Accepted',
     })
   } catch (error: any) {
-    console.error('Daraja result callback error:', error)
     return NextResponse.json(
       { error: 'Failed to process Daraja result callback', details: error.message },
       { status: 500 }

@@ -34,20 +34,21 @@ async function checkDatabase() {
         console.log(`\n   💰 Referrals (${affiliate.referrals.length}):`)
         for (const ref of affiliate.referrals) {
           console.log(`      - User: ${ref.userEmail}`)
-          console.log(`        Amount Paid: ${ref.amountPaid.toString()} KES`)
+          console.log(`        Plan Type: ${ref.planType}`)
           console.log(`        Commission: ${ref.commissionAmount.toString()} KES`)
           console.log(`        Status: ${ref.status}`)
-          console.log(`        Reference: ${ref.paymentReference}`)
+          console.log(`        Reference: ${ref.reference}`)
           console.log(`        Created: ${ref.createdAt.toISOString()}`)
           console.log('')
         }
 
-        // Calculate balance
-        const totalEarnings = affiliate.referrals
-          .filter(r => r.status === 'paid')
-          .reduce((sum, r) => sum + parseFloat(r.commissionAmount.toString()), 0)
+        const totalEarnings = parseFloat(affiliate.totalEarned.toString())
+        const pendingBalance = parseFloat(affiliate.pendingBalance.toString())
+        const availableBalance = parseFloat(affiliate.availableBalance.toString())
         
         console.log(`   📈 Total Earnings: ${totalEarnings} KES`)
+        console.log(`   ⏳ Pending Balance: ${pendingBalance} KES`)
+        console.log(`   💵 Available Balance: ${availableBalance} KES`)
       } else {
         console.log(`   ℹ️  No referrals yet`)
       }

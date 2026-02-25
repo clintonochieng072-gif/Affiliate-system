@@ -27,14 +27,13 @@ declare module 'next-auth/jwt' {
 export interface SalesWebhookPayload {
   agent_code: string
   user_email: string
-  product_slug: string
-  amount_paid: number
-  payment_reference: string
-  sales_earning_rate?: number
+  plan_type: string
+  reference: string
 }
 
 export interface PayoutRequest {
   amount: number
+  mpesaNumber: string
 }
 
 export interface DashboardStats {

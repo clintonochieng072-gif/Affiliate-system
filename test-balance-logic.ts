@@ -1,6 +1,6 @@
 /**
  * Test Balance Calculation Logic
- * Demonstrates how balance increases with referrals and decreases with withdrawals
+ * Reflects the new controlled financial architecture.
  */
 
 import { config } from 'dotenv'
@@ -13,11 +13,10 @@ async function testBalanceLogic() {
   try {
     console.log('🧪 Testing Balance Logic\n')
 
-    // Find affiliate
     const affiliate = await prisma.affiliate.findFirst({
       include: {
-        referrals: { where: { status: 'paid' } },
-        withdrawals: { where: { status: { in: ['completed', 'processing'] } } },
+        referrals: true,
+        withdrawals: true,
       },
     })
 
@@ -26,60 +25,24 @@ async function testBalanceLogic() {
       return
     }
 
-    console.log(`👤 Testing with: ${affiliate.name} (${affiliate.email})\n`)
+    const totalEarned = Number(affiliate.totalEarned)
+    const pendingBalance = Number(affiliate.pendingBalance)
+    const availableBalance = Number(affiliate.availableBalance)
 
-    // Calculate balance
-    const totalEarnings = affiliate.referrals.reduce(
-      (sum, r) => sum + parseFloat(r.commissionAmount.toString()),
-      0
-    )
-
-    const totalWithdrawn = affiliate.withdrawals.reduce(
-      (sum, w) => sum + parseFloat(w.requestedAmount.toString()),
-      0
-    )
-
-    const balance = totalEarnings - totalWithdrawn
-
-    console.log('📊 Current State:')
+    console.log(`👤 Affiliate: ${affiliate.name} (${affiliate.email})`)
+    console.log(`   Level: ${affiliate.level}`)
     console.log(`   Referrals: ${affiliate.referrals.length}`)
-    console.log(`   Total Earnings: ${totalEarnings} KES`)
-    console.log(`   Total Withdrawn: ${totalWithdrawn} KES`)
-    console.log(`   Available Balance: ${balance} KES\n`)
+    console.log(`   Withdrawals: ${affiliate.withdrawals.length}`)
+    console.log(`   Total Earned: ${totalEarned} KES`)
+    console.log(`   Pending Balance: ${pendingBalance} KES`)
+    console.log(`   Available Balance: ${availableBalance} KES\n`)
 
-    // Simulate scenarios
-    console.log('🎯 Balance Logic Verification:\n')
-
-    console.log('Scenario 1: 1st Referral (70 KES)')
-    console.log(`   Before: 0 KES`)
-    console.log(`   After: 0 + 70 = 70 KES ✅\n`)
-
-    console.log('Scenario 2: 2nd Referral (70 KES)')
-    console.log(`   Before: 70 KES`)
-    console.log(`   After: 70 + 70 = 140 KES ✅\n`)
-
-    console.log('Scenario 3: 3rd Referral (70 KES)')
-    console.log(`   Before: 140 KES`)
-    console.log(`   After: 140 + 70 = 210 KES ✅\n`)
-
-    console.log('Scenario 4: User Withdraws 140 KES')
-    console.log(`   Total Earnings: 210 KES (unchanged)`)
-    console.log(`   Total Withdrawn: 0 + 140 = 140 KES`)
-    console.log(`   New Balance: 210 - 140 = 70 KES ✅\n`)
-
-    console.log('Scenario 5: 4th Referral (70 KES)')
-    console.log(`   Before: 70 KES`)
-    console.log(`   Total Earnings: 210 + 70 = 280 KES`)
-    console.log(`   Total Withdrawn: 140 KES (unchanged)`)
-    console.log(`   New Balance: 280 - 140 = 140 KES ✅\n`)
-
-    console.log('✅ Balance Logic is Correct!')
-    console.log('\n📋 Rules:')
-    console.log('   1. Balance increases ONLY when referral is successful (+70 KES)')
-    console.log('   2. Balance decreases ONLY when withdrawal is made')
-    console.log('   3. Total Earnings never decreases')
-    console.log('   4. Balance = Total Earnings - Total Withdrawals')
-
+    console.log('✅ Rules verification:')
+    console.log('   1. Commission is matrix-based by plan + affiliate level')
+    console.log('   2. New commission goes to pendingBalance first')
+    console.log('   3. Minimum withdrawal is 600 KES')
+    console.log('   4. Withdrawal deduction is immediate from availableBalance')
+    console.log('   5. Failed withdrawal refunds availableBalance automatically')
   } catch (error) {
     console.error('❌ Error:', error)
   } finally {

@@ -10,8 +10,7 @@ import { Wallet, CreditCard, AlertCircle, CheckCircle2, Clock } from 'lucide-rea
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
-const PLATFORM_FEE_PER_BLOCK = 30 // KES per 140 block
-const WITHDRAWAL_BLOCK = 140 // KES
+const MIN_WITHDRAWAL_AMOUNT = 600
 
 export default function PayoutsPage() {
   const { data: session, status } = useSession()
@@ -38,17 +37,8 @@ export default function PayoutsPage() {
     setMessage(null)
 
     const amount = parseFloat(payoutAmount)
-    // Allow 10 KES for testing + multiples of 140 for normal withdrawals
-    const isTestAmount = amount === 10
-    const isValidMultiple = amount >= 140 && amount % 140 === 0
-    
-    if (isNaN(amount) || amount < 10) {
-      setMessage({ type: 'error', text: 'Minimum withdrawal amount is KSh 10' })
-      return
-    }
-
-    if (!isTestAmount && !isValidMultiple) {
-      setMessage({ type: 'error', text: 'Withdrawal amount must be KSh 10 (test) or multiples of KSh 140' })
+    if (isNaN(amount) || amount < MIN_WITHDRAWAL_AMOUNT) {
+      setMessage({ type: 'error', text: `Minimum withdrawal amount is KSh ${MIN_WITHDRAWAL_AMOUNT}` })
       return
     }
 
@@ -157,7 +147,7 @@ export default function PayoutsPage() {
             </div>
           </div>
           <p className="text-emerald-100 text-sm">
-            Minimum withdrawal: KSh 10 (test) or KSh 140+ • Funds sent via M-PESA after Daraja processing
+            Minimum withdrawal: KSh 600 • Funds sent via M-PESA after Daraja processing
           </p>
         </div>
 
@@ -175,11 +165,11 @@ export default function PayoutsPage() {
               </label>
               <input
                 type="number"
-                min="10"
-                step="10"
+                min="600"
+                step="1"
                 value={payoutAmount}
                 onChange={(e) => setPayoutAmount(e.target.value)}
-                placeholder="Enter 10 (test) or multiples of 140"
+                placeholder="Enter amount (minimum 600)"
                 className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -202,31 +192,6 @@ export default function PayoutsPage() {
               </p>
             </div>
 
-            {/* Fee Breakdown */}
-            {payoutAmount && parseFloat(payoutAmount) >= 140 && parseFloat(payoutAmount) % 140 === 0 && (
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Breakdown</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-slate-300">
-                    <span>Requested Amount:</span>
-                    <span className="font-semibold">{formatCurrency(parseFloat(payoutAmount))}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-300">
-                    <span>Platform Fee:</span>
-                    <span className="font-semibold text-red-400">
-                      -{formatCurrency(Math.floor(parseFloat(payoutAmount) / WITHDRAWAL_BLOCK) * PLATFORM_FEE_PER_BLOCK)}
-                    </span>
-                  </div>
-                  <div className="border-t border-slate-700 pt-2 mt-2 flex justify-between text-white font-bold">
-                    <span>You Receive:</span>
-                    <span className="text-green-400">
-                      {formatCurrency(parseFloat(payoutAmount) - Math.floor(parseFloat(payoutAmount) / WITHDRAWAL_BLOCK) * PLATFORM_FEE_PER_BLOCK)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {message && (
               <div
                 className={`p-4 rounded-lg border ${
@@ -248,15 +213,15 @@ export default function PayoutsPage() {
 
             <button
               type="submit"
-              disabled={requesting || availableBalance < 10}
+              disabled={requesting || availableBalance < MIN_WITHDRAWAL_AMOUNT}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {requesting ? 'Processing...' : 'Request Withdrawal'}
             </button>
 
-            {availableBalance < 10 && (
+            {availableBalance < MIN_WITHDRAWAL_AMOUNT && (
               <p className="text-sm text-yellow-400 text-center">
-                You need at least KSh 10 to request a withdrawal. Current balance: {formatCurrency(availableBalance)}
+                You need at least KSh {MIN_WITHDRAWAL_AMOUNT} to request a withdrawal. Current balance: {formatCurrency(availableBalance)}
               </p>
             )}
           </form>
@@ -360,10 +325,9 @@ export default function PayoutsPage() {
             Withdrawal Information
           </h3>
           <ul className="space-y-2 text-slate-300 text-sm">
-            <li>• Minimum withdrawal amount is KSh 140 (2 active subscriptions)</li>
-            <li>• Withdrawals must be in multiples of KSh 140</li>
-            <li>• Platform fee: KSh 30 per KSh 140 block (you receive KSh 110)</li>
-            <li>• Daraja callback states: pending, processing, processed, failed</li>
+            <li>• Minimum withdrawal amount is KSh 600</li>
+            <li>• Withdrawals are flexible above KSh 600</li>
+            <li>• Daraja callback states: pending, processing, completed, failed</li>
             <li>• Withdrawals are usually processed within 24 hours</li>
             <li>• Funds are sent via M-PESA mobile money transfer</li>
             <li>• Provide a valid M-PESA number (format: 07XX XXX XXX)</li>

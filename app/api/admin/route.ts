@@ -29,12 +29,7 @@ export async function GET(request: NextRequest) {
     const salesAgents = await prisma.affiliate.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        referrals: {
-          where: { status: 'paid' },
-        },
-        payouts: {
-          where: { status: 'paid' },
-        },
+        referrals: true,
       },
     })
 
@@ -54,32 +49,25 @@ export async function GET(request: NextRequest) {
 
     // Calculate totals
     const totalRevenue = salesActivity.reduce(
-      (sum, r) => sum + decimalToNumber(r.amountPaid),
+      (sum, r) => sum + decimalToNumber(r.commissionAmount),
       0
     )
-    const totalSalesEarnings = salesActivity
-      .filter(r => r.status === 'paid')
-      .reduce((sum, r) => sum + decimalToNumber(r.commissionAmount), 0)
+    const totalSalesEarnings = salesActivity.reduce(
+      (sum, r) => sum + decimalToNumber(r.commissionAmount),
+      0
+    )
 
     // Prepare sales agent data with earnings
     const salesAgentsData = salesAgents.map(a => {
-      const totalEarnings = a.referrals.reduce(
-        (sum, r) => sum + decimalToNumber(r.commissionAmount),
-        0
-      )
-      const totalPayouts = a.payouts.reduce(
-        (sum, p) => sum + decimalToNumber(p.amount),
-        0
-      )
-      const availableBalance = totalEarnings - totalPayouts
-
       return {
         id: a.id,
         name: a.name,
         email: a.email,
+        level: a.level,
         totalSalesCount: a.referrals.length,
-        totalSalesEarnings: totalEarnings,
-        availableSalesEarnings: availableBalance,
+        totalSalesEarnings: decimalToNumber(a.totalEarned),
+        pendingSalesEarnings: decimalToNumber(a.pendingBalance),
+        availableSalesEarnings: decimalToNumber(a.availableBalance),
         createdAt: a.createdAt.toISOString(),
       }
     })
@@ -98,10 +86,10 @@ export async function GET(request: NextRequest) {
         salesAgentName: r.affiliate.name,
         salesAgentEmail: r.affiliate.email,
         userEmail: r.userEmail,
-        productSlug: r.productSlug,
-        subscriptionValue: decimalToNumber(r.amountPaid),
+        productSlug: r.planType,
+        subscriptionValue: null,
         salesEarnings: decimalToNumber(r.commissionAmount),
-        paymentReference: r.paymentReference,
+        paymentReference: r.reference,
         status: r.status,
         createdAt: r.createdAt.toISOString(),
       })),

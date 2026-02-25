@@ -31,6 +31,14 @@ export async function GET(request: NextRequest) {
         referrals: {
           orderBy: { createdAt: 'desc' },
           take: 20,
+          include: {
+            plan: {
+              select: { planType: true, name: true },
+            },
+          },
+        },
+        withdrawals: {
+          orderBy: { createdAt: 'desc' },
         },
       },
     })
@@ -42,41 +50,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Calculate total earnings (all paid sales records)
-    const paidSales = salesAgent.referrals.filter(r => r.status === 'paid')
-    const totalSalesEarnings = paidSales.reduce(
-      (sum, r) => sum + decimalToNumber(r.commissionAmount),
-      0
-    )
-
-    // Calculate pending earnings
-    const pendingSales = salesAgent.referrals.filter(r => r.status === 'pending')
-    const pendingSalesEarnings = pendingSales.reduce(
-      (sum, r) => sum + decimalToNumber(r.commissionAmount),
-      0
-    )
-
-    // Fetch all withdrawals for history and balance calculations
-    const withdrawals = await prisma.withdrawal.findMany({
-      where: {
-        affiliateId: salesAgent.id,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
-
-    const withdrawalsAffectingBalance = withdrawals.filter(
-      (w) => w.status === 'completed' || w.status === 'processing'
-    )
-
-    const totalWithdrawn = withdrawalsAffectingBalance.reduce(
-      (sum, w) => sum + decimalToNumber(w.requestedAmount),
-      0
-    )
-
-    // Available balance = total sales earnings - total withdrawals
-    const availableSalesEarnings = totalSalesEarnings - totalWithdrawn
+    const availableSalesEarnings = decimalToNumber(salesAgent.availableBalance)
+    const pendingSalesEarnings = decimalToNumber(salesAgent.pendingBalance)
+    const totalSalesEarnings = decimalToNumber(salesAgent.totalEarned)
 
     // Prepare response
     const response = {
@@ -98,21 +74,23 @@ export async function GET(request: NextRequest) {
       salesActivity: salesAgent.referrals.map(r => ({
         id: r.id,
         userEmail: r.userEmail,
-        productSlug: r.productSlug,
-        subscriptionValue: decimalToNumber(r.amountPaid),
+        planType: r.planType,
+        productSlug: r.planType,
+        subscriptionValue: null,
         salesEarnings: decimalToNumber(r.commissionAmount),
-        paymentReference: r.paymentReference,
+        paymentReference: r.reference,
+        reference: r.reference,
         status: r.status,
         createdAt: r.createdAt.toISOString(),
       })),
-      payoutHistory: withdrawals.map(w => ({
+      payoutHistory: salesAgent.withdrawals.map(w => ({
         id: w.id,
-        requestedAmount: decimalToNumber(w.requestedAmount),
-        payoutAmount: decimalToNumber(w.payoutAmount),
-        platformFee: decimalToNumber(w.platformFee),
+        requestedAmount: decimalToNumber(w.amount),
+        amount: decimalToNumber(w.amount),
         mpesaNumber: w.mpesaNumber,
         status: w.status,
         failureReason: w.failureReason,
+        providerReference: w.providerReference,
         createdAt: w.createdAt.toISOString(),
       })),
     }

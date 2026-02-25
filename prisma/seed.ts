@@ -1,43 +1,103 @@
 import { config } from 'dotenv'
-import { PrismaClient } from '@prisma/client'
+import { AffiliateLevel, PrismaClient } from '@prisma/client'
 
-// Load environment variables from .env.local
 config({ path: '.env.local' })
 
 const prisma = new PrismaClient()
 
+async function upsertPlan(planType: string, name: string) {
+  return prisma.plan.upsert({
+    where: { planType },
+    update: { name, isActive: true },
+    create: {
+      planType,
+      name,
+      isActive: true,
+    },
+  })
+}
+
 async function main() {
   console.log('🌱 Seeding database...')
 
-  // Create Lead Capture System product
   const leadCaptureProduct = await prisma.product.upsert({
     where: { slug: 'lead-capture-system' },
     update: {},
     create: {
       slug: 'lead-capture-system',
       name: 'Lead Capture System',
-      description: 'The #1 tool for capturing and converting leads. Beautiful customizable forms, automated follow-ups, real-time analytics, and CRM integrations.',
+      description:
+        'The #1 tool for capturing and converting leads. Beautiful customizable forms, automated follow-ups, real-time analytics, and CRM integrations.',
       url: 'https://leads.clintonstack.com',
       isHighlighted: true,
     },
   })
 
-  console.log('✅ Created product:', leadCaptureProduct.name)
+  const individualPlan = await upsertPlan('Individual', 'Individual Plan')
+  const professionalPlan = await upsertPlan('Professional', 'Professional Plan')
 
-  // You can add more products here in the future
-  /*
-  const anotherProduct = await prisma.product.create({
-    data: {
-      slug: 'another-product',
-      name: 'Another Product',
-      description: 'Description of another product',
-      url: 'https://example.com',
-      isHighlighted: false,
+  await prisma.commissionRule.upsert({
+    where: {
+      affiliateLevel_planId: {
+        affiliateLevel: AffiliateLevel.LEVEL_1,
+        planId: individualPlan.id,
+      },
+    },
+    update: { rewardAmount: 300 },
+    create: {
+      affiliateLevel: AffiliateLevel.LEVEL_1,
+      planId: individualPlan.id,
+      rewardAmount: 300,
     },
   })
-  console.log('✅ Created product:', anotherProduct.name)
-  */
 
+  await prisma.commissionRule.upsert({
+    where: {
+      affiliateLevel_planId: {
+        affiliateLevel: AffiliateLevel.LEVEL_1,
+        planId: professionalPlan.id,
+      },
+    },
+    update: { rewardAmount: 800 },
+    create: {
+      affiliateLevel: AffiliateLevel.LEVEL_1,
+      planId: professionalPlan.id,
+      rewardAmount: 800,
+    },
+  })
+
+  await prisma.commissionRule.upsert({
+    where: {
+      affiliateLevel_planId: {
+        affiliateLevel: AffiliateLevel.LEVEL_2,
+        planId: individualPlan.id,
+      },
+    },
+    update: { rewardAmount: 450 },
+    create: {
+      affiliateLevel: AffiliateLevel.LEVEL_2,
+      planId: individualPlan.id,
+      rewardAmount: 450,
+    },
+  })
+
+  await prisma.commissionRule.upsert({
+    where: {
+      affiliateLevel_planId: {
+        affiliateLevel: AffiliateLevel.LEVEL_2,
+        planId: professionalPlan.id,
+      },
+    },
+    update: { rewardAmount: 1200 },
+    create: {
+      affiliateLevel: AffiliateLevel.LEVEL_2,
+      planId: professionalPlan.id,
+      rewardAmount: 1200,
+    },
+  })
+
+  console.log('✅ Product seeded:', leadCaptureProduct.name)
+  console.log('✅ Plans and commission matrix seeded')
   console.log('🎉 Database seeded successfully!')
 }
 
