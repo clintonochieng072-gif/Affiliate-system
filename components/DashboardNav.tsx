@@ -28,12 +28,13 @@ export default function DashboardNav() {
   const [profilePhone, setProfilePhone] = useState('')
   const [profileError, setProfileError] = useState<string | null>(null)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
-  const [hasCheckedProfile, setHasCheckedProfile] = useState(false)
   const closeTimerRef = useRef<number | null>(null)
 
-  // Only check profile once on initial mount, not on every page navigation
+  // Only check profile once per session using sessionStorage to persist across page navigations
   useEffect(() => {
-    if (hasCheckedProfile) {
+    // Check if we've already verified the profile in this session
+    const profileChecked = sessionStorage.getItem('profileChecked')
+    if (profileChecked === 'true') {
       return
     }
 
@@ -57,7 +58,6 @@ export default function DashboardNav() {
         }
 
         setProfile({ name: currentName, phone: currentPhone })
-        setHasCheckedProfile(true)
 
         // Only show modal if profile is incomplete
         if (!hasName || !hasPhone) {
@@ -65,9 +65,13 @@ export default function DashboardNav() {
           requestAnimationFrame(() => setIsProfileModalOpen(true))
           setProfileName(currentName)
           setProfilePhone(currentPhone)
+        } else {
+          // Profile is complete, mark as checked so modal never shows again
+          sessionStorage.setItem('profileChecked', 'true')
         }
       } catch {
-        setHasCheckedProfile(true)
+        // Even on error, don't keep showing the modal
+        sessionStorage.setItem('profileChecked', 'true')
       }
     }
 
@@ -76,7 +80,7 @@ export default function DashboardNav() {
     return () => {
       isActive = false
     }
-  }, [hasCheckedProfile])
+  }, [])
 
   useEffect(() => {
     if (!isProfileModalOpen) {
@@ -143,6 +147,10 @@ export default function DashboardNav() {
       }
 
       setProfile({ name: payload?.profile?.name || trimmedName, phone: payload?.profile?.phone || trimmedPhone })
+      
+      // Mark profile as complete so modal never appears again
+      sessionStorage.setItem('profileChecked', 'true')
+      
       closeProfileModal()
     } catch (error: any) {
       setProfileError(error.message || 'Unable to save profile details.')
