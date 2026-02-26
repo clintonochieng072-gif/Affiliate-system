@@ -53,6 +53,8 @@ export default function DashboardNav() {
         const hasName = Boolean(currentName)
         const hasPhone = Boolean(currentPhone)
 
+        console.log('[DashboardNav] Profile check:', { hasName, hasPhone, name: currentName, phone: currentPhone })
+
         if (!isActive) {
           return
         }
@@ -68,6 +70,7 @@ export default function DashboardNav() {
         } else {
           // Profile is complete, mark as checked so modal never shows again
           sessionStorage.setItem('profileChecked', 'true')
+          console.log('[DashboardNav] Profile complete, modal will not show')
         }
       } catch {
         // Even on error, don't keep showing the modal
@@ -146,6 +149,8 @@ export default function DashboardNav() {
         throw new Error(payload?.error || 'Failed to update profile')
       }
 
+      console.log('[DashboardNav] Profile saved successfully:', payload?.profile)
+
       setProfile({ name: payload?.profile?.name || trimmedName, phone: payload?.profile?.phone || trimmedPhone })
       
       // Mark profile as complete so modal never appears again
@@ -153,6 +158,7 @@ export default function DashboardNav() {
       
       closeProfileModal()
     } catch (error: any) {
+      console.error('[DashboardNav] Error saving profile:', error)
       setProfileError(error.message || 'Unable to save profile details.')
     } finally {
       setIsSavingProfile(false)
