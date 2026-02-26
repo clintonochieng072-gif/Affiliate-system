@@ -60,38 +60,20 @@ export const authOptions: NextAuthOptions = {
       // On successful Google sign-in, create sales agent record if it doesn't exist
       if (account?.provider === 'google' && user.email) {
         try {
-          const affiliate = await prisma.affiliate.findUnique({
+          await prisma.affiliate.upsert({
             where: { email: user.email },
-            select: { id: true, isFrozen: true },
+            update: {
+              name: user.name || user.email,
+              role: user.email === ADMIN_EMAIL ? 'ADMIN' : undefined,
+            },
+            create: {
+              name: user.name || user.email,
+              email: user.email,
+              role: user.email === ADMIN_EMAIL ? 'ADMIN' : 'AFFILIATE',
+            },
           })
-
-          if (!affiliate) {
-            console.log('✨ Creating new sales agent for:', user.email)
-            await prisma.affiliate.create({
-              data: {
-                name: user.name || user.email,
-                email: user.email,
-                role: user.email === ADMIN_EMAIL ? 'ADMIN' : 'AFFILIATE',
-              },
-            })
-          } else {
-            if (affiliate.isFrozen) {
-              return false
-            }
-
-            console.log('✅ Existing sales agent found:', user.email)
-
-            await prisma.affiliate.update({
-              where: { id: affiliate.id },
-              data: {
-                name: user.name || user.email,
-                role: user.email === ADMIN_EMAIL ? 'ADMIN' : undefined,
-              },
-            })
-          }
         } catch (error) {
           console.error('❌ Error creating sales agent:', error)
-          return true
         }
       }
       return true
@@ -112,13 +94,19 @@ export const authOptions: NextAuthOptions = {
         token.sub = user.id
       }
 
-      if (token.email) {
-        const affiliate = await prisma.affiliate.findUnique({
-          where: { email: token.email },
-          select: { role: true },
-        })
+      token.role = token.email === ADMIN_EMAIL ? 'admin' : 'affiliate'
 
-        token.role = affiliate?.role === 'ADMIN' ? 'admin' : 'affiliate'
+      if (token.email) {
+        try {
+          const affiliate = await prisma.affiliate.findUnique({
+            where: { email: token.email },
+            select: { role: true },
+          })
+
+          token.role = affiliate?.role === 'ADMIN' ? 'admin' : 'affiliate'
+        } catch (error) {
+          console.error('❌ Error resolving JWT role:', error)
+        }
       }
 
       return token
