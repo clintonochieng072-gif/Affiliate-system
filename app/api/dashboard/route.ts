@@ -10,12 +10,18 @@ import {
 import { decimalToNumber } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
+  let signedInEmail = ''
+  let signedInName = 'Affiliate'
+
   try {
     const session = await getServerSession(authOptions)
 
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    signedInEmail = session.user.email
+    signedInName = session.user.name || 'Affiliate'
 
     const affiliate = await prisma.affiliate.findUnique({
       where: { email: session.user.email },
@@ -161,6 +167,65 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Dashboard API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+
+    return NextResponse.json({
+      affiliate: {
+        id: '',
+        email: signedInEmail,
+        name: signedInName,
+        phone: null,
+        level: 'LEVEL_1',
+        levelLabel: 'Level 1',
+        isFrozen: false,
+        role: 'AFFILIATE',
+        isProfileComplete: false,
+        level4EligibleForInterview: false,
+        level4EligibleAt: null,
+        createdAt: new Date().toISOString(),
+      },
+      summary: {
+        totalReferrals: 0,
+        totalReferralsIndividual: 0,
+        totalReferralsProfessional: 0,
+        totalSalesEarnings: 0,
+        availableSalesEarnings: 0,
+        pendingSalesEarnings: 0,
+      },
+      progress: {
+        currentLevel: 'LEVEL_1',
+        currentLevelLabel: 'Level 1',
+        nextLevel: 'LEVEL_2',
+        nextLevelLabel: 'Level 2',
+        progressPercent: 0,
+        individualProgressPercent: 0,
+        professionalProgressPercent: 0,
+      },
+      roadmap: Object.entries(LEVEL_PROGRESS_REQUIREMENTS).map(([level, cfg]) => ({
+        level,
+        label: getLevelLabel(level as 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3' | 'LEVEL_4'),
+        nextLevel: cfg.nextLevel,
+        individualRequired: cfg.individualRequired,
+        professionalRequired: cfg.professionalRequired,
+        reached: level === 'LEVEL_1',
+      })),
+      salesTrackingLinks: [],
+      referralHistory: [],
+      payoutHistory: [],
+      notifications: [],
+      totalSalesEarnings: 0,
+      availableSalesEarnings: 0,
+      pendingSalesEarnings: 0,
+      salesActivity: [],
+      salesAgent: {
+        id: '',
+        name: signedInName,
+        email: signedInEmail,
+        createdAt: new Date().toISOString(),
+      },
+      _meta: {
+        degraded: true,
+        message: 'Dashboard fallback response due to backend data error',
+      },
+    })
   }
 }

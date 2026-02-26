@@ -41,10 +41,25 @@ export default function DashboardOverviewPage() {
     )
   }
 
-  const affiliate = data.affiliate
-  const summary = data.summary
-  const progress = data.progress
-  const roadmap = data.roadmap || []
+  const affiliate = data.affiliate || {
+    isProfileComplete: false,
+  }
+  const summary = data.summary || {
+    totalReferrals: 0,
+    totalReferralsIndividual: 0,
+    totalReferralsProfessional: 0,
+    totalSalesEarnings: 0,
+    availableSalesEarnings: 0,
+    pendingSalesEarnings: 0,
+  }
+  const progress = data.progress || {
+    currentLevelLabel: 'Level 1',
+    nextLevelLabel: 'Level 2',
+    progressPercent: 0,
+    individualProgressPercent: 0,
+    professionalProgressPercent: 0,
+  }
+  const roadmap = Array.isArray(data.roadmap) ? data.roadmap : []
 
   return (
     <div className="min-h-screen bg-slate-950">
