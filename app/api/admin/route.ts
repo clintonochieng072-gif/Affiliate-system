@@ -202,6 +202,24 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Admin API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({
+      stats: {
+        totalAffiliates: 0,
+        totalRevenueGenerated: 0,
+        totalCommissionsPaid: 0,
+        pendingWithdrawalsCount: 0,
+        netProfitEstimate: 0,
+      },
+      notifications: [],
+      affiliates: [],
+      recentReferrals: [],
+      pendingWithdrawals: [],
+      topPerformers: [],
+      level4EligibleAffiliates: [],
+      _meta: {
+        degraded: true,
+        message: 'Admin fallback response due to backend data error',
+      },
+    })
   }
 }

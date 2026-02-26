@@ -9,7 +9,16 @@ import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
 import { ArrowRight, BadgeCheck, Wallet, Users, TrendingUp } from 'lucide-react'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const fetcher = async (url: string) => {
+  const response = await fetch(url)
+  const payload = await response.json()
+
+  if (!response.ok || payload?.error) {
+    throw new Error(payload?.error || 'Request failed')
+  }
+
+  return payload
+}
 
 export default function DashboardOverviewPage() {
   const { data: session, status } = useSession()

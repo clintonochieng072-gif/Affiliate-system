@@ -7,7 +7,16 @@ import useSWR from 'swr'
 import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const fetcher = async (url: string) => {
+  const response = await fetch(url)
+  const payload = await response.json()
+
+  if (!response.ok || payload?.error) {
+    throw new Error(payload?.error || 'Request failed')
+  }
+
+  return payload
+}
 
 export default function LeaderboardPage() {
   const { data: session, status } = useSession()

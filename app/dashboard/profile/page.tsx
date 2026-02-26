@@ -6,7 +6,16 @@ import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 import DashboardNav from '@/components/DashboardNav'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const fetcher = async (url: string) => {
+  const response = await fetch(url)
+  const payload = await response.json()
+
+  if (!response.ok || payload?.error) {
+    throw new Error(payload?.error || 'Request failed')
+  }
+
+  return payload
+}
 
 export default function ProfileSettingsPage() {
   const { data: session, status } = useSession()
@@ -61,9 +70,11 @@ export default function ProfileSettingsPage() {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading profile...</div>
   }
 
-  if (error || !data) {
+  if (error || !data || !data.profile) {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-red-400">Failed to load profile</div>
   }
+
+  const profile = data.profile
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -75,7 +86,7 @@ export default function ProfileSettingsPage() {
         <form onSubmit={onSubmit} className="bg-slate-900 border border-slate-800 rounded-lg p-5 space-y-4">
           <div>
             <label className="block text-sm text-slate-300 mb-1">Email</label>
-            <input value={data.profile.email} disabled className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-400" />
+            <input value={profile.email || ''} disabled className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-400" />
           </div>
 
           <div>

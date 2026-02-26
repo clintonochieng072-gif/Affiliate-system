@@ -50,6 +50,12 @@ export async function GET(request: NextRequest) {
       })),
     })
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({
+      referrals: [],
+      _meta: {
+        degraded: true,
+        message: 'Referral fallback response due to backend data error',
+      },
+    })
   }
 }

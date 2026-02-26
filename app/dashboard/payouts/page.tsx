@@ -8,7 +8,16 @@ import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
 import { Wallet, CreditCard, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const fetcher = async (url: string) => {
+  const response = await fetch(url)
+  const payload = await response.json()
+
+  if (!response.ok || payload?.error) {
+    throw new Error(payload?.error || 'Request failed')
+  }
+
+  return payload
+}
 
 const MIN_WITHDRAWAL_AMOUNT = 600
 

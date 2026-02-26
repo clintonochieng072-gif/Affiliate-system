@@ -8,7 +8,16 @@ import useSWR from 'swr'
 import { formatCurrency } from '@/lib/utils'
 import SignOutButton from '@/components/SignOutButton'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const fetcher = async (url: string) => {
+  const response = await fetch(url)
+  const payload = await response.json()
+
+  if (!response.ok || payload?.error) {
+    throw new Error(payload?.error || 'Request failed')
+  }
+
+  return payload
+}
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
@@ -59,10 +68,6 @@ export default function AdminPage() {
 
   if (error || !data) {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-red-400">Failed to load admin dashboard</div>
-  }
-
-  if (data.error) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-red-400">{data.error}</div>
   }
 
   return (

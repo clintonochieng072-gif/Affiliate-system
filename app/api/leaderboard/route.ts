@@ -40,6 +40,13 @@ export async function GET(request: NextRequest) {
       full,
     })
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({
+      topPerformers: [],
+      full: false,
+      _meta: {
+        degraded: true,
+        message: 'Leaderboard fallback response due to backend data error',
+      },
+    })
   }
 }

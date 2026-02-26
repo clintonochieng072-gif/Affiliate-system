@@ -4,11 +4,15 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
 export async function GET() {
+  let signedInEmail = ''
+
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    signedInEmail = session.user.email
 
     const affiliate = await prisma.affiliate.findUnique({
       where: { email: session.user.email },
@@ -28,7 +32,20 @@ export async function GET() {
 
     return NextResponse.json({ profile: affiliate })
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({
+      profile: {
+        id: '',
+        email: signedInEmail,
+        name: '',
+        phone: '',
+        level: 'LEVEL_1',
+        role: 'AFFILIATE',
+      },
+      _meta: {
+        degraded: true,
+        message: 'Profile fallback response due to backend data error',
+      },
+    })
   }
 }
 
