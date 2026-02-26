@@ -30,7 +30,7 @@ ALTER TABLE "referrals"
 
 UPDATE "referrals"
 SET "status" = 'active'
-WHERE "status" = 'paid';
+WHERE "status"::text = 'paid';
 
 ALTER TABLE "withdrawals"
   ADD COLUMN IF NOT EXISTS "completedAt" timestamptz;
