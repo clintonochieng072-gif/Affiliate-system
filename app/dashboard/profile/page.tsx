@@ -20,6 +20,7 @@ const fetcher = async (url: string) => {
 export default function ProfileSettingsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const [isRequired, setIsRequired] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [saving, setSaving] = useState(false)
@@ -39,6 +40,13 @@ export default function ProfileSettingsPage() {
       setPhone(data.profile.phone || '')
     }
   }, [data])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      setIsRequired(params.get('required') === '1')
+    }
+  }, [])
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -79,9 +87,15 @@ export default function ProfileSettingsPage() {
   return (
     <div className="min-h-screen bg-slate-950">
       <DashboardNav />
-      <main className="lg:ml-64 p-4 lg:p-6 max-w-3xl">
+      <main className="lg:ml-64 p-4 lg:p-6">
         <h1 className="text-2xl font-bold text-white mb-1">Profile Settings</h1>
-        <p className="text-slate-400 text-sm mb-5">Keep your public affiliate details updated</p>
+        <p className="text-slate-400 text-sm mb-5">Keep your Sales Partner profile updated anytime.</p>
+
+        {isRequired && (
+          <div className="mb-4 text-sm rounded-lg p-3 bg-orange-900/30 text-orange-200 border border-orange-600/30">
+            Please complete your name and phone number before continuing.
+          </div>
+        )}
 
         <form onSubmit={onSubmit} className="bg-slate-900 border border-slate-800 rounded-lg p-5 space-y-4">
           <div>
@@ -122,7 +136,7 @@ export default function ProfileSettingsPage() {
             disabled={saving}
             className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg disabled:opacity-60"
           >
-            {saving ? 'Saving...' : 'Save Profile'}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </form>
       </main>

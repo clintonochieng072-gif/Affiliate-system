@@ -76,7 +76,7 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-xs text-slate-400">Affiliate management and financial controls</p>
+            <p className="text-xs text-slate-400">Sales Partner management and financial controls</p>
           </div>
           <SignOutButton />
         </div>
@@ -84,7 +84,7 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-5 space-y-5">
         <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <Metric title="Total Affiliates" value={data.stats.totalAffiliates} />
+          <Metric title="Total Sales Partners" value={data.stats.totalAffiliates} />
           <Metric title="Revenue" value={formatCurrency(data.stats.totalRevenueGenerated)} />
           <Metric title="Commissions" value={formatCurrency(data.stats.totalCommissionsPaid)} />
           <Metric title="Pending Withdrawals" value={data.stats.pendingWithdrawalsCount} />
@@ -109,7 +109,7 @@ export default function AdminPage() {
 
         <section className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-800">
-            <h2 className="font-semibold">Affiliate Management</h2>
+            <h2 className="font-semibold">Sales Partner Management</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -170,7 +170,7 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-800 text-slate-300">
                 <tr>
-                  <th className="px-3 py-2 text-left">Affiliate</th>
+                  <th className="px-3 py-2 text-left">Sales Partner</th>
                   <th className="px-3 py-2 text-left">Amount</th>
                   <th className="px-3 py-2 text-left">Status</th>
                   <th className="px-3 py-2 text-left">Actions</th>
@@ -212,10 +212,10 @@ export default function AdminPage() {
             </ul>
           </Panel>
 
-          <Panel title="Level 4 Interview Eligible">
+          <Panel title="Level 4 Interview Review Eligible">
             <ul className="space-y-2 text-sm">
               {data.level4EligibleAffiliates.length === 0 ? (
-                <li className="text-slate-400">No level 4 affiliates yet</li>
+                <li className="text-slate-400">No Level 4 sales partners yet</li>
               ) : (
                 data.level4EligibleAffiliates.map((item: any) => (
                   <li key={item.id} className="border border-slate-800 rounded p-2">

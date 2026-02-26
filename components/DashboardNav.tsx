@@ -2,22 +2,70 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { Menu, X, LayoutDashboard, Users, Trophy, UserCog, LogOut } from 'lucide-react'
+import { useEffect } from 'react'
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Users,
+  Trophy,
+  UserCog,
+  LogOut,
+  Wallet,
+  TrendingUp,
+  BarChart3,
+} from 'lucide-react'
 
 export default function DashboardNav() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!pathname || pathname === '/dashboard/profile') {
+      return
+    }
+
+    const enforceProfile = async () => {
+      try {
+        const response = await fetch('/api/profile')
+        if (!response.ok) {
+          return
+        }
+
+        const payload = await response.json()
+        const hasName = Boolean(payload?.profile?.name?.trim())
+        const hasPhone = Boolean(payload?.profile?.phone?.trim())
+
+        if (!hasName || !hasPhone) {
+          router.push('/dashboard/profile?required=1')
+        }
+      } catch {
+      }
+    }
+
+    enforceProfile()
+  }, [pathname, router])
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
+    { href: '/dashboard/referrals', icon: Users, label: 'My Clients' },
+    { href: '/dashboard/earnings', icon: BarChart3, label: 'Earnings' },
+    { href: '/dashboard/growth-level', icon: TrendingUp, label: 'Growth & Level' },
     { href: '/dashboard/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { href: '/dashboard/referrals', icon: Users, label: 'Referral History' },
+    { href: '/dashboard/withdrawals', icon: Wallet, label: 'Withdrawals' },
     { href: '/dashboard/profile', icon: UserCog, label: 'Profile Settings' },
   ]
 
-  const isActive = (href: string) => pathname === href
+  const isActive = (href: string) => {
+    if (href === '/dashboard') {
+      return pathname === href
+    }
+
+    return pathname?.startsWith(href)
+  }
 
   return (
     <>
@@ -25,7 +73,7 @@ export default function DashboardNav() {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800">
         <div className="flex items-center justify-between px-4 py-4">
           <Link href="/dashboard" className="text-xl font-bold text-white">
-            Clintonstack
+            ClintonStack
           </Link>
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -73,9 +121,9 @@ export default function DashboardNav() {
           {/* Logo */}
           <div className="p-6 border-b border-slate-800">
             <Link href="/dashboard" className="text-2xl font-bold text-white">
-              Clintonstack
+              ClintonStack
             </Link>
-            <p className="text-sm text-slate-400 mt-1">Affiliate Dashboard</p>
+            <p className="text-sm text-slate-400 mt-1">Sales Partner Network</p>
           </div>
 
           {/* Navigation */}

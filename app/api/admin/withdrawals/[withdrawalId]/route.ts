@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { canTransitionWithdrawal } from '@/lib/withdrawal'
 
 const ADMIN_EMAIL = 'clintonstack4@gmail.com'
 
@@ -52,6 +53,13 @@ export async function PATCH(
     }
 
     if (action === 'approve') {
+      if (!canTransitionWithdrawal(withdrawal.status, 'processing')) {
+        return NextResponse.json(
+          { error: `Cannot move withdrawal from ${withdrawal.status} to processing` },
+          { status: 409 }
+        )
+      }
+
       const updated = await prisma.withdrawal.update({
         where: { id: withdrawal.id },
         data: { status: 'processing' },
@@ -61,6 +69,13 @@ export async function PATCH(
     }
 
     if (action === 'mark_paid') {
+      if (!canTransitionWithdrawal(withdrawal.status, 'completed')) {
+        return NextResponse.json(
+          { error: `Cannot move withdrawal from ${withdrawal.status} to completed` },
+          { status: 409 }
+        )
+      }
+
       const updated = await prisma.withdrawal.update({
         where: { id: withdrawal.id },
         data: {
@@ -76,6 +91,13 @@ export async function PATCH(
     if (withdrawal.status === 'completed' || withdrawal.status === 'failed') {
       return NextResponse.json(
         { error: 'Withdrawal already finalized' },
+        { status: 409 }
+      )
+    }
+
+    if (!canTransitionWithdrawal(withdrawal.status, 'failed')) {
+      return NextResponse.json(
+        { error: `Cannot move withdrawal from ${withdrawal.status} to failed` },
         { status: 409 }
       )
     }

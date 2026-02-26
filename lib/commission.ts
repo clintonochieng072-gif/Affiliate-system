@@ -1,5 +1,12 @@
 import { AffiliateLevel, PrismaClient } from '@prisma/client'
 
+export const SALES_LEVEL_TITLES: Record<AffiliateLevel, string> = {
+  LEVEL_1: 'Sales Associate',
+  LEVEL_2: 'Senior Sales Associate',
+  LEVEL_3: 'Sales Executive',
+  LEVEL_4: 'Strategic Sales Partner',
+}
+
 export const LEVEL_PROGRESS_REQUIREMENTS: Record<
   AffiliateLevel,
   { nextLevel: AffiliateLevel | null; individualRequired: number; professionalRequired: number }
@@ -12,6 +19,14 @@ export const LEVEL_PROGRESS_REQUIREMENTS: Record<
 
 export function getLevelLabel(level: AffiliateLevel) {
   return level.replace('LEVEL_', 'Level ')
+}
+
+export function getSalesLevelTitle(level: AffiliateLevel) {
+  return SALES_LEVEL_TITLES[level]
+}
+
+export function getSalesLevelDisplayName(level: AffiliateLevel) {
+  return `${getLevelLabel(level)} – ${getSalesLevelTitle(level)}`
 }
 
 export function getPromotionTarget(
@@ -106,4 +121,30 @@ export async function getCommissionForPlanAndLevel(
   }
 
   return { plan, rewardAmount: Number(rule.rewardAmount) }
+}
+
+export async function getCommissionMatrixForLevel(
+  prisma: PrismaClient,
+  affiliateLevel: AffiliateLevel
+) {
+  const rules = await prisma.commissionRule.findMany({
+    where: { affiliateLevel },
+    include: {
+      plan: {
+        select: {
+          id: true,
+          planType: true,
+          isActive: true,
+        },
+      },
+    },
+  })
+
+  return rules
+    .filter(rule => rule.plan.isActive)
+    .map(rule => ({
+      planId: rule.plan.id,
+      planType: rule.plan.planType,
+      rewardAmount: Number(rule.rewardAmount),
+    }))
 }
