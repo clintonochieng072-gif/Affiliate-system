@@ -58,13 +58,12 @@ export const authOptions: NextAuthOptions = {
       // On successful Google sign-in, create sales agent record if it doesn't exist
       if (account?.provider === 'google' && user.email) {
         try {
-          // Check if sales agent exists
-          const existingSalesAgent = await prisma.affiliate.findUnique({
+          const affiliate = await prisma.affiliate.findUnique({
             where: { email: user.email },
+            select: { id: true },
           })
 
-          // Create sales agent if it doesn't exist
-          if (!existingSalesAgent) {
+          if (!affiliate) {
             console.log('✨ Creating new sales agent for:', user.email)
             await prisma.affiliate.create({
               data: {
@@ -77,7 +76,7 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error('❌ Error creating sales agent:', error)
-          return false // Prevent sign-in on database error
+          return true
         }
       }
       return true
@@ -94,10 +93,10 @@ export const authOptions: NextAuthOptions = {
     
     async jwt({ token, user }) {
       // Add user ID to token
-      if (user) {
+      if (user?.id) {
         token.sub = user.id
-        token.role = 'sales_agent'
       }
+      token.role = 'sales_agent'
       return token
     },
   },
