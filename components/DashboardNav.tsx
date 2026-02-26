@@ -28,10 +28,12 @@ export default function DashboardNav() {
   const [profilePhone, setProfilePhone] = useState('')
   const [profileError, setProfileError] = useState<string | null>(null)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [hasCheckedProfile, setHasCheckedProfile] = useState(false)
   const closeTimerRef = useRef<number | null>(null)
 
+  // Only check profile once on initial mount, not on every page navigation
   useEffect(() => {
-    if (!pathname) {
+    if (hasCheckedProfile) {
       return
     }
 
@@ -55,17 +57,17 @@ export default function DashboardNav() {
         }
 
         setProfile({ name: currentName, phone: currentPhone })
+        setHasCheckedProfile(true)
 
+        // Only show modal if profile is incomplete
         if (!hasName || !hasPhone) {
-          // Keep the modal mounted while the transition runs to avoid stacking.
           setIsProfileModalMounted(true)
           requestAnimationFrame(() => setIsProfileModalOpen(true))
           setProfileName(currentName)
           setProfilePhone(currentPhone)
-        } else {
-          closeProfileModal()
         }
       } catch {
+        setHasCheckedProfile(true)
       }
     }
 
@@ -74,7 +76,7 @@ export default function DashboardNav() {
     return () => {
       isActive = false
     }
-  }, [pathname])
+  }, [hasCheckedProfile])
 
   useEffect(() => {
     if (!isProfileModalOpen) {
