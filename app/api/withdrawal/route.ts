@@ -250,6 +250,7 @@ export async function GET() {
         failureReason: w.failureReason,
         providerReference: w.providerReference,
         createdAt: w.createdAt,
+        completedAt: w.completedAt,
       })),
     })
   } catch (error) {

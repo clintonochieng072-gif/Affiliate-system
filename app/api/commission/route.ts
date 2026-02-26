@@ -1,9 +1,12 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCommissionForPlanAndLevel } from '@/lib/commission'
+import { getPromotionTarget, getLevelLabel } from '@/lib/commission'
+import { AffiliateLevel } from '@prisma/client'
 
 interface CommissionPayload {
   agent_code?: string
+  client_name?: string
   user_email?: string
   plan_type?: string
   reference?: string
@@ -37,7 +40,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    const { agent_code, user_email, plan_type, reference } = body
+    const { agent_code, client_name, user_email, plan_type, reference } = body
 
     if (!agent_code || !user_email || !plan_type || !reference) {
       return NextResponse.json(
@@ -95,6 +98,9 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             level: true,
+            isFrozen: true,
+            totalReferralsIndividual: true,
+            totalReferralsProfessional: true,
           },
         },
       },
@@ -104,6 +110,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Agent code not found' },
         { status: 404 }
+      )
+    }
+
+    if (affiliateLink.affiliate.isFrozen) {
+      return NextResponse.json(
+        { success: false, error: 'Affiliate account is frozen' },
+        { status: 403 }
       )
     }
 
@@ -135,32 +148,97 @@ export async function POST(request: NextRequest) {
           affiliateId: affiliateLink.affiliate.id,
           planId: commissionLookup.plan!.id,
           planType: commissionLookup.plan!.planType,
+          clientName: client_name || null,
           userEmail: user_email,
           commissionAmount: rewardAmount,
           reference,
-          status: 'pending',
+          status: 'active',
         },
       })
+
+      const planTypeNormalized = commissionLookup.plan!.planType.toLowerCase()
+      const isProfessionalPlan = planTypeNormalized === 'professional'
 
       const updatedAffiliate = await tx.affiliate.update({
         where: { id: affiliateLink.affiliate.id },
         data: {
-          pendingBalance: { increment: rewardAmount },
+          availableBalance: { increment: rewardAmount },
           totalEarned: { increment: rewardAmount },
+          totalReferralsIndividual: isProfessionalPlan
+            ? undefined
+            : { increment: 1 },
+          totalReferralsProfessional: isProfessionalPlan
+            ? { increment: 1 }
+            : undefined,
         },
         select: {
+          id: true,
+          level: true,
+          totalReferralsIndividual: true,
+          totalReferralsProfessional: true,
           pendingBalance: true,
           availableBalance: true,
           totalEarned: true,
         },
       })
 
-      return { referral, updatedAffiliate }
+      let currentLevel: AffiliateLevel = updatedAffiliate.level
+      let levelChanged = false
+
+      while (true) {
+        const targetLevel = getPromotionTarget(
+          currentLevel,
+          updatedAffiliate.totalReferralsIndividual,
+          updatedAffiliate.totalReferralsProfessional
+        )
+
+        if (!targetLevel) {
+          break
+        }
+
+        currentLevel = targetLevel
+        levelChanged = true
+      }
+
+      let promotedToLevel: AffiliateLevel | null = null
+
+      if (levelChanged && currentLevel !== updatedAffiliate.level) {
+        promotedToLevel = currentLevel
+        await tx.affiliate.update({
+          where: { id: updatedAffiliate.id },
+          data: {
+            level: currentLevel,
+            promotedAt: new Date(),
+            level4EligibleAt: currentLevel === 'LEVEL_4' ? new Date() : undefined,
+          },
+        })
+
+        await tx.notification.create({
+          data: {
+            affiliateId: updatedAffiliate.id,
+            roleTarget: 'AFFILIATE',
+            type: 'promotion',
+            title: 'Promotion unlocked',
+            message: `Congratulations! You have been promoted to ${getLevelLabel(currentLevel)}.`,
+          },
+        })
+      }
+
+      await tx.notification.create({
+        data: {
+          roleTarget: 'ADMIN',
+          type: 'referral_success',
+          title: 'Successful referral recorded',
+          message: `Affiliate ${affiliateLink.affiliate.id} converted ${user_email} on ${commissionLookup.plan!.planType}.`,
+        },
+      })
+
+      return { referral, updatedAffiliate, promotedToLevel }
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Activation processed and commission queued to pending balance',
+      message: 'Activation processed and commission credited',
       commission: {
         id: created.referral.id,
         affiliateId: created.referral.affiliateId,
@@ -175,6 +253,15 @@ export async function POST(request: NextRequest) {
         availableBalance: Number(created.updatedAffiliate.availableBalance),
         totalEarned: Number(created.updatedAffiliate.totalEarned),
       },
+      promotion: created.promotedToLevel
+        ? {
+            promoted: true,
+            newLevel: created.promotedToLevel,
+            label: getLevelLabel(created.promotedToLevel),
+          }
+        : {
+            promoted: false,
+          },
     })
   } catch (error: any) {
     if (error?.code === 'P2002') {
@@ -205,7 +292,7 @@ export async function GET() {
     notes: [
       'Do not send monetary amounts from LCS',
       'Commission is computed inside Affiliate System from plan + affiliate level',
-      'Rewards are credited to pendingBalance first',
+      'Rewards are credited to availableBalance immediately for one-time payout logic',
     ],
   })
 }

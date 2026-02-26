@@ -7,6 +7,8 @@ import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { prisma } from './prisma'
 
+const ADMIN_EMAIL = 'clintonstack4@gmail.com'
+
 // Verify environment variables are loaded
 if (!process.env.GOOGLE_CLIENT_ID) {
   console.error('❌ GOOGLE_CLIENT_ID is not defined in environment variables')
@@ -60,7 +62,7 @@ export const authOptions: NextAuthOptions = {
         try {
           const affiliate = await prisma.affiliate.findUnique({
             where: { email: user.email },
-            select: { id: true },
+            select: { id: true, isFrozen: true },
           })
 
           if (!affiliate) {
@@ -69,10 +71,23 @@ export const authOptions: NextAuthOptions = {
               data: {
                 name: user.name || user.email,
                 email: user.email,
+                role: user.email === ADMIN_EMAIL ? 'ADMIN' : 'AFFILIATE',
               },
             })
           } else {
+            if (affiliate.isFrozen) {
+              return false
+            }
+
             console.log('✅ Existing sales agent found:', user.email)
+
+            await prisma.affiliate.update({
+              where: { id: affiliate.id },
+              data: {
+                name: user.name || user.email,
+                role: user.email === ADMIN_EMAIL ? 'ADMIN' : undefined,
+              },
+            })
           }
         } catch (error) {
           console.error('❌ Error creating sales agent:', error)
@@ -86,7 +101,7 @@ export const authOptions: NextAuthOptions = {
       // Add user ID to session
       if (session.user) {
         session.user.id = token.sub!
-        session.user.role = 'sales_agent'
+        session.user.role = (token.role as 'admin' | 'affiliate') || 'affiliate'
       }
       return session
     },
@@ -96,7 +111,16 @@ export const authOptions: NextAuthOptions = {
       if (user?.id) {
         token.sub = user.id
       }
-      token.role = 'sales_agent'
+
+      if (token.email) {
+        const affiliate = await prisma.affiliate.findUnique({
+          where: { email: token.email },
+          select: { role: true },
+        })
+
+        token.role = affiliate?.role === 'ADMIN' ? 'admin' : 'affiliate'
+      }
+
       return token
     },
   },

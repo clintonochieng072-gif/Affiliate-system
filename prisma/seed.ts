@@ -73,11 +73,11 @@ async function main() {
         planId: individualPlan.id,
       },
     },
-    update: { rewardAmount: 450 },
+    update: { rewardAmount: 400 },
     create: {
       affiliateLevel: AffiliateLevel.LEVEL_2,
       planId: individualPlan.id,
-      rewardAmount: 450,
+      rewardAmount: 400,
     },
   })
 
@@ -88,11 +88,71 @@ async function main() {
         planId: professionalPlan.id,
       },
     },
-    update: { rewardAmount: 1200 },
+    update: { rewardAmount: 1000 },
     create: {
       affiliateLevel: AffiliateLevel.LEVEL_2,
       planId: professionalPlan.id,
-      rewardAmount: 1200,
+      rewardAmount: 1000,
+    },
+  })
+
+  await prisma.commissionRule.upsert({
+    where: {
+      affiliateLevel_planId: {
+        affiliateLevel: AffiliateLevel.LEVEL_3,
+        planId: individualPlan.id,
+      },
+    },
+    update: { rewardAmount: 500 },
+    create: {
+      affiliateLevel: AffiliateLevel.LEVEL_3,
+      planId: individualPlan.id,
+      rewardAmount: 500,
+    },
+  })
+
+  await prisma.commissionRule.upsert({
+    where: {
+      affiliateLevel_planId: {
+        affiliateLevel: AffiliateLevel.LEVEL_3,
+        planId: professionalPlan.id,
+      },
+    },
+    update: { rewardAmount: 1300 },
+    create: {
+      affiliateLevel: AffiliateLevel.LEVEL_3,
+      planId: professionalPlan.id,
+      rewardAmount: 1300,
+    },
+  })
+
+  await prisma.commissionRule.upsert({
+    where: {
+      affiliateLevel_planId: {
+        affiliateLevel: AffiliateLevel.LEVEL_4,
+        planId: individualPlan.id,
+      },
+    },
+    update: { rewardAmount: 600 },
+    create: {
+      affiliateLevel: AffiliateLevel.LEVEL_4,
+      planId: individualPlan.id,
+      rewardAmount: 600,
+    },
+  })
+
+  await prisma.commissionRule.upsert({
+    where: {
+      affiliateLevel_planId: {
+        affiliateLevel: AffiliateLevel.LEVEL_4,
+        planId: professionalPlan.id,
+      },
+    },
+    update: { rewardAmount: 1500 },
+    create: {
+      affiliateLevel: AffiliateLevel.LEVEL_4,
+      planId: professionalPlan.id,
+      rewardAmount: 1500,
     },
   })
 

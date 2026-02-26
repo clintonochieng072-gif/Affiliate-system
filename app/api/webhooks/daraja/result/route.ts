@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
         where: { id: withdrawal.id },
         data: {
           status: 'completed',
+          completedAt: new Date(),
           failureReason: null,
           providerReference: conversationId || withdrawal.providerReference,
         },

@@ -13,6 +13,13 @@ datasource db {
 enum AffiliateLevel {
   LEVEL_1
   LEVEL_2
+  LEVEL_3
+  LEVEL_4
+}
+
+enum UserRole {
+  AFFILIATE
+  ADMIN
 }
 
 enum WithdrawalStatus {
@@ -27,10 +34,18 @@ model Affiliate {
   id        String   @id @default(uuid())
   email     String   @unique
   name      String
+  phone     String?
+  role      UserRole @default(AFFILIATE)
   level     AffiliateLevel @default(LEVEL_1)
+  totalReferralsIndividual Int @default(0)
+  totalReferralsProfessional Int @default(0)
   pendingBalance   Decimal  @default(0) @db.Decimal(12, 2)
   availableBalance Decimal  @default(0) @db.Decimal(12, 2)
   totalEarned      Decimal  @default(0) @db.Decimal(12, 2)
+  isFrozen         Boolean  @default(false)
+  promotedAt       DateTime?
+  level4EligibleAt DateTime?
+  registrationDate DateTime @default(now())
   createdAt DateTime @default(now())
   
   // Relations
@@ -38,6 +53,7 @@ model Affiliate {
   referrals Referral[]
   payouts   Payout[]
   withdrawals Withdrawal[]
+  notifications Notification[]
 
   @@index([email])
   @@map("affiliates")
@@ -117,10 +133,13 @@ model Referral {
   affiliateId       String
   planId            String
   planType          String
+  clientName        String?
   userEmail         String
   commissionAmount  Decimal  @db.Decimal(10, 2)
   reference         String   @unique
-  status            String   @default("pending")
+  status            String   @default("active")
+  promotionAppliedAt DateTime?
+  referralDate      DateTime @default(now())
   createdAt         DateTime @default(now())
   
   // Relations
@@ -161,6 +180,7 @@ model Withdrawal {
   status            WithdrawalStatus @default(pending)
   providerReference String?          @unique
   failureReason     String?
+  completedAt       DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   
@@ -172,4 +192,23 @@ model Withdrawal {
   @@index([providerReference])
   @@index([createdAt])
   @@map("withdrawals")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  affiliateId String?
+  roleTarget  UserRole
+  type        String
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  affiliate   Affiliate? @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId])
+  @@index([roleTarget])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }

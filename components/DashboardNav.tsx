@@ -4,18 +4,17 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { Menu, X, LayoutDashboard, Package, Users, DollarSign, CreditCard, LogOut, Wallet } from 'lucide-react'
+import { Menu, X, LayoutDashboard, Users, Trophy, UserCog, LogOut } from 'lucide-react'
 
 export default function DashboardNav() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
 
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Sales Overview' },
-    { href: '/dashboard/products', icon: Package, label: 'Products' },
-    { href: '/dashboard/sales', icon: Users, label: 'Sales Activity' },
-    { href: '/dashboard/earnings', icon: DollarSign, label: 'Sales Earnings' },
-    { href: '/dashboard/payouts', icon: Wallet, label: 'Payouts' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
+    { href: '/dashboard/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { href: '/dashboard/referrals', icon: Users, label: 'Referral History' },
+    { href: '/dashboard/profile', icon: UserCog, label: 'Profile Settings' },
   ]
 
   const isActive = (href: string) => pathname === href
@@ -76,7 +75,7 @@ export default function DashboardNav() {
             <Link href="/dashboard" className="text-2xl font-bold text-white">
               Clintonstack
             </Link>
-            <p className="text-sm text-slate-400 mt-1">Sales Agent Dashboard</p>
+            <p className="text-sm text-slate-400 mt-1">Affiliate Dashboard</p>
           </div>
 
           {/* Navigation */}
