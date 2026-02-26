@@ -34,12 +34,6 @@ export default function DashboardOverviewPage() {
     refreshInterval: 15000,
   })
 
-  useEffect(() => {
-    if (data?.affiliate && !data.affiliate.isProfileComplete) {
-      router.push('/dashboard/profile?required=1')
-    }
-  }, [data, router])
-
   const currentCommission = useMemo(() => {
     const matrix = Array.isArray(data?.currentCommissionMatrix) ? data.currentCommissionMatrix : []
     const individual = matrix.find((item: any) => String(item.planType).toLowerCase() === 'individual')

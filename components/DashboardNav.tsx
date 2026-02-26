@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { useEffect } from 'react'
 import {
@@ -21,14 +21,23 @@ import {
 export default function DashboardNav() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
+  const [profile, setProfile] = useState<{ name: string; phone: string } | null>(null)
+  const [isProfileModalMounted, setIsProfileModalMounted] = useState(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [profileName, setProfileName] = useState('')
+  const [profilePhone, setProfilePhone] = useState('')
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const closeTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!pathname || pathname === '/dashboard/profile') {
+    if (!pathname) {
       return
     }
 
-    const enforceProfile = async () => {
+    let isActive = true
+
+    const loadProfile = async () => {
       try {
         const response = await fetch('/api/profile')
         if (!response.ok) {
@@ -36,18 +45,109 @@ export default function DashboardNav() {
         }
 
         const payload = await response.json()
-        const hasName = Boolean(payload?.profile?.name?.trim())
-        const hasPhone = Boolean(payload?.profile?.phone?.trim())
+        const currentName = String(payload?.profile?.name || '').trim()
+        const currentPhone = String(payload?.profile?.phone || '').trim()
+        const hasName = Boolean(currentName)
+        const hasPhone = Boolean(currentPhone)
+
+        if (!isActive) {
+          return
+        }
+
+        setProfile({ name: currentName, phone: currentPhone })
 
         if (!hasName || !hasPhone) {
-          router.push('/dashboard/profile?required=1')
+          // Keep the modal mounted while the transition runs to avoid stacking.
+          setIsProfileModalMounted(true)
+          requestAnimationFrame(() => setIsProfileModalOpen(true))
+          setProfileName(currentName)
+          setProfilePhone(currentPhone)
+        } else {
+          closeProfileModal()
         }
       } catch {
       }
     }
 
-    enforceProfile()
-  }, [pathname, router])
+    loadProfile()
+
+    return () => {
+      isActive = false
+    }
+  }, [pathname])
+
+  useEffect(() => {
+    if (!isProfileModalOpen) {
+      return
+    }
+
+    // Prevent background scrolling while the modal is open.
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isProfileModalOpen])
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current)
+      }
+    }
+  }, [])
+
+  const closeProfileModal = () => {
+    // Close animation runs before unmounting the modal overlay.
+    setIsProfileModalOpen(false)
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current)
+    }
+    closeTimerRef.current = window.setTimeout(() => {
+      setIsProfileModalMounted(false)
+    }, 200)
+  }
+
+  const handleProfileSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setProfileError(null)
+
+    const trimmedName = profileName.trim()
+    const trimmedPhone = profilePhone.trim()
+    const phoneDigits = trimmedPhone.replace(/\D/g, '')
+
+    if (trimmedName.length < 2) {
+      setProfileError('Please enter your full name.')
+      return
+    }
+
+    if (phoneDigits.length < 7) {
+      setProfileError('Please enter a valid phone number.')
+      return
+    }
+
+    setIsSavingProfile(true)
+
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName, phone: trimmedPhone }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to update profile')
+      }
+
+      setProfile({ name: payload?.profile?.name || trimmedName, phone: payload?.profile?.phone || trimmedPhone })
+      closeProfileModal()
+    } catch (error: any) {
+      setProfileError(error.message || 'Unable to save profile details.')
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
@@ -160,6 +260,83 @@ export default function DashboardNav() {
       {/* Spacer for fixed elements */}
       <div className="lg:hidden h-16"></div>
       <div className="hidden lg:block w-64"></div>
+
+      {isProfileModalMounted && (
+        <div
+          className={`fixed inset-0 z-[60] flex items-center justify-center px-4 sm:px-6 transition-opacity duration-200 ${
+            isProfileModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+          aria-hidden={!isProfileModalOpen}
+        >
+          {/* Modal overlay ensures the dashboard stays visible behind it. */}
+          <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" />
+
+          <div
+            className={`relative w-[90%] max-w-md rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-2xl transition-all duration-200 ${
+              isProfileModalOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-modal-title"
+          >
+            <div>
+              <h2 id="profile-modal-title" className="text-lg font-semibold text-white">
+                Complete your profile
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Add your name and phone to unlock the dashboard tools.
+              </p>
+            </div>
+
+            <form onSubmit={handleProfileSubmit} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Name</label>
+                <input
+                  value={profileName}
+                  onChange={(event) => setProfileName(event.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                  placeholder="Enter your full name"
+                  autoComplete="name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Phone</label>
+                <input
+                  value={profilePhone}
+                  onChange={(event) => setProfilePhone(event.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                  placeholder="Enter your mobile number"
+                  autoComplete="tel"
+                  required
+                />
+              </div>
+
+              {profileError && (
+                <div className="text-sm rounded-lg p-3 bg-red-900/30 text-red-300 border border-red-600/30">
+                  {profileError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                {profile && (
+                  <span className="text-xs text-slate-400">
+                    Current: {profile.name || 'Missing name'} • {profile.phone || 'Missing phone'}
+                  </span>
+                )}
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg disabled:opacity-60"
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save details'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   )
 }
