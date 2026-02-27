@@ -243,75 +243,266 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Dashboard API error:', error)
 
-    return NextResponse.json({
-      affiliate: {
-        id: '',
-        email: signedInEmail,
-        name: signedInName,
-        phone: null,
-        level: 'LEVEL_1',
-        levelLabel: 'Level 1',
-        levelTitle: 'Sales Associate',
-        levelDisplayName: 'Level 1 – Sales Associate',
-        isFrozen: false,
-        role: 'AFFILIATE',
-        isProfileComplete: false,
-        level4EligibleForInterview: false,
-        level4EligibleAt: null,
-        createdAt: new Date().toISOString(),
+    try {
+      if (!signedInEmail) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      const affiliateColumns = await prisma.$queryRawUnsafe<Array<{ column_name: string }>>(
+        `select column_name from information_schema.columns where table_schema='public' and table_name='affiliates'`
+      )
+      const referralColumns = await prisma.$queryRawUnsafe<Array<{ column_name: string }>>(
+        `select column_name from information_schema.columns where table_schema='public' and table_name='referrals'`
+      )
+
+      const hasTotalEarned = affiliateColumns.some((col) => col.column_name === 'totalEarned')
+      const earningsColumn = hasTotalEarned ? 'totalEarned' : 'totalEarnings'
+      const hasUserEmail = referralColumns.some((col) => col.column_name === 'userEmail')
+      const referralEmailColumn = hasUserEmail ? 'userEmail' : 'clientEmail'
+
+      const affiliateRows = await prisma.$queryRawUnsafe<Array<any>>(
+        `select
+          "id",
+          "email",
+          "name",
+          "phone",
+          "level",
+          "role",
+          "isFrozen",
+          "totalReferralsIndividual",
+          "totalReferralsProfessional",
+          "pendingBalance",
+          "availableBalance",
+          "${earningsColumn}" as "totalSalesEarnings",
+          "level4EligibleAt",
+          "createdAt"
+         from "affiliates"
+         where "email" = $1
+         limit 1`,
+        signedInEmail
+      )
+
+      const affiliate = affiliateRows[0]
+      if (!affiliate) {
+        return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
+      }
+
+      const currentLevel = ['LEVEL_1', 'LEVEL_2', 'LEVEL_3', 'LEVEL_4'].includes(String(affiliate.level))
+        ? (affiliate.level as 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3' | 'LEVEL_4')
+        : 'LEVEL_1'
+
+      const progress = computeProgressToNextLevel(
+        currentLevel,
+        Number(affiliate.totalReferralsIndividual || 0),
+        Number(affiliate.totalReferralsProfessional || 0)
+      )
+
+      const [currentLevelCommission, allCommissionRules] = await Promise.all([
+        getCommissionMatrixForLevel(prisma, currentLevel),
+        prisma.commissionRule.findMany({
+          include: {
+            plan: {
+              select: {
+                planType: true,
+                isActive: true,
+              },
+            },
+          },
+        }),
+      ])
+
+      const roadmap = Object.entries(LEVEL_PROGRESS_REQUIREMENTS).map(([level, cfg]) => {
+        const levelKey = level as 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3' | 'LEVEL_4'
+        const commissionByLevel = allCommissionRules
+          .filter((rule) => rule.affiliateLevel === levelKey && rule.plan.isActive)
+          .map((rule) => ({
+            planType: rule.plan.planType,
+            rewardAmount: decimalToNumber(rule.rewardAmount),
+          }))
+
+        return {
+          level,
+          label: getLevelLabel(levelKey),
+          title: getSalesLevelTitle(levelKey),
+          displayName: getSalesLevelDisplayName(levelKey),
+          nextLevel: cfg.nextLevel,
+          individualRequired: cfg.individualRequired,
+          professionalRequired: cfg.professionalRequired,
+          reached:
+            level === 'LEVEL_1' ||
+            (level === 'LEVEL_2' && ['LEVEL_2', 'LEVEL_3', 'LEVEL_4'].includes(currentLevel)) ||
+            (level === 'LEVEL_3' && ['LEVEL_3', 'LEVEL_4'].includes(currentLevel)) ||
+            (level === 'LEVEL_4' && currentLevel === 'LEVEL_4'),
+          commissionByLevel,
+        }
+      })
+
+      const [leaderboardRows, linksRows, referralRows, withdrawalRows, notificationRows] = await Promise.all([
+        prisma.$queryRawUnsafe<Array<any>>(
+          `select "id", "name", "email", "level", "${earningsColumn}" as "totalEarnings", "totalReferralsIndividual", "totalReferralsProfessional", "createdAt"
+           from "affiliates"
+           where "role" = 'AFFILIATE'::"UserRole"
+           order by "${earningsColumn}" desc, "createdAt" asc
+           limit 10`
+        ),
+        prisma.$queryRawUnsafe<Array<any>>(
+          `select "id", "productSlug", "referralCode", "createdAt"
+           from "affiliate_links"
+           where "affiliateId" = $1
+           order by "createdAt" desc`,
+          affiliate.id
+        ),
+        prisma.$queryRawUnsafe<Array<any>>(
+          `select "id", "clientName", "${referralEmailColumn}" as "clientEmail", "planType", "commissionAmount", "status", "reference", "createdAt"
+           from "referrals"
+           where "affiliateId" = $1
+           order by "createdAt" desc
+           limit 200`,
+          affiliate.id
+        ),
+        prisma.$queryRawUnsafe<Array<any>>(
+          `select "id", "amount", "status", "mpesaNumber", "failureReason", "providerReference", "createdAt", "completedAt"
+           from "withdrawals"
+           where "affiliateId" = $1
+           order by "createdAt" desc
+           limit 50`,
+          affiliate.id
+        ),
+        prisma.$queryRawUnsafe<Array<any>>(
+          `select "id", "type", "title", "message", "isRead", "createdAt"
+           from "notifications"
+           where "affiliateId" = $1 and "roleTarget" = 'AFFILIATE'::"UserRole"
+           order by "createdAt" desc
+           limit 10`,
+          affiliate.id
+        ),
+      ])
+
+      const availableSalesEarnings = Number(affiliate.availableBalance || 0)
+      const pendingSalesEarnings = Number(affiliate.pendingBalance || 0)
+      const totalSalesEarnings = Number(affiliate.totalSalesEarnings || 0)
+      const totalReferrals =
+        Number(affiliate.totalReferralsIndividual || 0) + Number(affiliate.totalReferralsProfessional || 0)
+
+      return NextResponse.json({
+        affiliate: {
+          id: affiliate.id,
+          email: affiliate.email,
+          name: affiliate.name,
+          phone: affiliate.phone,
+          level: currentLevel,
+          levelLabel: getLevelLabel(currentLevel),
+          levelTitle: getSalesLevelTitle(currentLevel),
+          levelDisplayName: getSalesLevelDisplayName(currentLevel),
+          isFrozen: Boolean(affiliate.isFrozen),
+          role: affiliate.role || 'AFFILIATE',
+          isProfileComplete: Boolean(affiliate.name && affiliate.phone),
+          level4EligibleForInterview: currentLevel === 'LEVEL_4',
+          level4EligibleAt: affiliate.level4EligibleAt ? new Date(affiliate.level4EligibleAt).toISOString() : null,
+          createdAt: new Date(affiliate.createdAt).toISOString(),
+        },
+        summary: {
+          totalReferrals,
+          totalReferralsIndividual: Number(affiliate.totalReferralsIndividual || 0),
+          totalReferralsProfessional: Number(affiliate.totalReferralsProfessional || 0),
+          totalSalesEarnings,
+          availableSalesEarnings,
+          pendingSalesEarnings,
+        },
+        progress: {
+          currentLevel,
+          currentLevelLabel: getLevelLabel(currentLevel),
+          currentLevelTitle: getSalesLevelTitle(currentLevel),
+          currentLevelDisplayName: getSalesLevelDisplayName(currentLevel),
+          nextLevel: progress.nextLevel,
+          nextLevelLabel: progress.nextLevel ? getLevelLabel(progress.nextLevel) : null,
+          nextLevelTitle: progress.nextLevel ? getSalesLevelTitle(progress.nextLevel) : null,
+          nextLevelDisplayName: progress.nextLevel ? getSalesLevelDisplayName(progress.nextLevel) : null,
+          progressPercent: progress.progressPercent,
+          individualProgressPercent: progress.individualProgressPercent,
+          professionalProgressPercent: progress.professionalProgressPercent,
+        },
+        roadmap,
+        currentCommissionMatrix: currentLevelCommission,
+        leaderboardPreview: leaderboardRows.map((partner, index) => ({
+          rank: index + 1,
+          id: partner.id,
+          name: partner.name,
+          email: partner.email,
+          level: partner.level,
+          totalReferrals: Number(partner.totalReferralsIndividual || 0) + Number(partner.totalReferralsProfessional || 0),
+          totalEarnings: Number(partner.totalEarnings || 0),
+        })),
+        salesTrackingLinks: linksRows.map((link) => ({
+          id: link.id,
+          productSlug: link.productSlug,
+          agentCode: link.referralCode,
+          createdAt: new Date(link.createdAt).toISOString(),
+        })),
+        referralHistory: referralRows.map((referral) => ({
+          id: referral.id,
+          clientName: referral.clientName || 'Unknown Client',
+          clientEmail: referral.clientEmail,
+          planType: referral.planType,
+          commission: Number(referral.commissionAmount || 0),
+          status: referral.status,
+          reference: referral.reference,
+          date: new Date(referral.createdAt).toISOString(),
+        })),
+        payoutHistory: withdrawalRows.map((withdrawal) => ({
+          id: withdrawal.id,
+          amount: Number(withdrawal.amount || 0),
+          status: withdrawal.status,
+          mpesaNumber: withdrawal.mpesaNumber,
+          failureReason: withdrawal.failureReason,
+          providerReference: withdrawal.providerReference,
+          requestedDate: new Date(withdrawal.createdAt).toISOString(),
+          completedDate: withdrawal.completedAt ? new Date(withdrawal.completedAt).toISOString() : null,
+        })),
+        notifications: notificationRows.map((item) => ({
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          message: item.message,
+          isRead: Boolean(item.isRead),
+          createdAt: new Date(item.createdAt).toISOString(),
+        })),
+        totalSalesEarnings,
+        availableSalesEarnings,
+        pendingSalesEarnings,
+        salesActivity: referralRows.map((referral) => ({
+          id: referral.id,
+          userEmail: referral.clientEmail,
+          planType: referral.planType,
+          productSlug: referral.planType,
+          subscriptionValue: null,
+          salesEarnings: Number(referral.commissionAmount || 0),
+          paymentReference: referral.reference,
+          reference: referral.reference,
+          status: referral.status,
+          createdAt: new Date(referral.createdAt).toISOString(),
+        })),
+        salesAgent: {
+          id: affiliate.id,
+          name: affiliate.name,
+          email: affiliate.email,
+          createdAt: new Date(affiliate.createdAt).toISOString(),
+        },
+        _meta: {
+          degraded: true,
+          message: 'Served by compatibility fallback due to schema mismatch',
+        },
+      })
+    } catch (compatError) {
+      console.error('Dashboard compatibility fallback error:', compatError)
+    }
+
+    return NextResponse.json(
+      {
+        error: 'Dashboard failed to load',
+        details: 'Backend data query failed',
       },
-      summary: {
-        totalReferrals: 0,
-        totalReferralsIndividual: 0,
-        totalReferralsProfessional: 0,
-        totalSalesEarnings: 0,
-        availableSalesEarnings: 0,
-        pendingSalesEarnings: 0,
-      },
-      progress: {
-        currentLevel: 'LEVEL_1',
-        currentLevelLabel: 'Level 1',
-        currentLevelTitle: 'Sales Associate',
-        currentLevelDisplayName: 'Level 1 – Sales Associate',
-        nextLevel: 'LEVEL_2',
-        nextLevelLabel: 'Level 2',
-        nextLevelTitle: 'Senior Sales Associate',
-        nextLevelDisplayName: 'Level 2 – Senior Sales Associate',
-        progressPercent: 0,
-        individualProgressPercent: 0,
-        professionalProgressPercent: 0,
-      },
-      roadmap: Object.entries(LEVEL_PROGRESS_REQUIREMENTS).map(([level, cfg]) => ({
-        level,
-        label: getLevelLabel(level as 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3' | 'LEVEL_4'),
-        title: getSalesLevelTitle(level as 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3' | 'LEVEL_4'),
-        displayName: getSalesLevelDisplayName(level as 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3' | 'LEVEL_4'),
-        nextLevel: cfg.nextLevel,
-        individualRequired: cfg.individualRequired,
-        professionalRequired: cfg.professionalRequired,
-        reached: level === 'LEVEL_1',
-        commissionByLevel: [],
-      })),
-      currentCommissionMatrix: [],
-      leaderboardPreview: [],
-      salesTrackingLinks: [],
-      referralHistory: [],
-      payoutHistory: [],
-      notifications: [],
-      totalSalesEarnings: 0,
-      availableSalesEarnings: 0,
-      pendingSalesEarnings: 0,
-      salesActivity: [],
-      salesAgent: {
-        id: '',
-        name: signedInName,
-        email: signedInEmail,
-        createdAt: new Date().toISOString(),
-      },
-      _meta: {
-        degraded: true,
-        message: 'Dashboard fallback response due to backend data error',
-      },
-    })
+      { status: 500 }
+    )
   }
 }
