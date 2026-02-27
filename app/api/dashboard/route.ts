@@ -341,7 +341,7 @@ export async function GET(request: NextRequest) {
         prisma.$queryRawUnsafe<Array<any>>(
           `select "id", "name", "email", "level", "${earningsColumn}" as "totalEarnings", "totalReferralsIndividual", "totalReferralsProfessional", "createdAt"
            from "affiliates"
-           where "role" = 'AFFILIATE'::"UserRole"
+            where "role"::text = 'AFFILIATE'
            order by "${earningsColumn}" desc, "createdAt" asc
            limit 10`
         ),
@@ -371,7 +371,7 @@ export async function GET(request: NextRequest) {
         prisma.$queryRawUnsafe<Array<any>>(
           `select "id", "type", "title", "message", "isRead", "createdAt"
            from "notifications"
-           where "affiliateId" = $1 and "roleTarget" = 'AFFILIATE'::"UserRole"
+           where "affiliateId" = $1 and "roleTarget"::text = 'AFFILIATE'
            order by "createdAt" desc
            limit 10`,
           affiliate.id
