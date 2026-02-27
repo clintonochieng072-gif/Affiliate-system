@@ -21,6 +21,7 @@ import {
 export default function DashboardNav() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const isDashboardOverview = pathname === '/dashboard'
   const [profile, setProfile] = useState<{ name: string; phone: string } | null>(null)
   const [isProfileModalMounted, setIsProfileModalMounted] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
@@ -30,11 +31,10 @@ export default function DashboardNav() {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const closeTimerRef = useRef<number | null>(null)
 
-  // Only check profile once per session using sessionStorage to persist across page navigations
   useEffect(() => {
-    // Check if we've already verified the profile in this session
-    const profileChecked = sessionStorage.getItem('profileChecked')
-    if (profileChecked === 'true') {
+    if (!isDashboardOverview) {
+      setIsProfileModalOpen(false)
+      setIsProfileModalMounted(false)
       return
     }
 
@@ -61,20 +61,22 @@ export default function DashboardNav() {
 
         setProfile({ name: currentName, phone: currentPhone })
 
-        // Only show modal if profile is incomplete
         if (!hasName || !hasPhone) {
           setIsProfileModalMounted(true)
           requestAnimationFrame(() => setIsProfileModalOpen(true))
           setProfileName(currentName)
           setProfilePhone(currentPhone)
         } else {
-          // Profile is complete, mark as checked so modal never shows again
-          sessionStorage.setItem('profileChecked', 'true')
-          console.log('[DashboardNav] Profile complete, modal will not show')
+          setIsProfileModalOpen(false)
+          setIsProfileModalMounted(false)
         }
       } catch {
-        // Even on error, don't keep showing the modal
-        sessionStorage.setItem('profileChecked', 'true')
+        if (!isActive) {
+          return
+        }
+
+        setIsProfileModalOpen(false)
+        setIsProfileModalMounted(false)
       }
     }
 
@@ -83,7 +85,7 @@ export default function DashboardNav() {
     return () => {
       isActive = false
     }
-  }, [])
+  }, [isDashboardOverview])
 
   useEffect(() => {
     if (!isProfileModalOpen) {
@@ -152,10 +154,7 @@ export default function DashboardNav() {
       console.log('[DashboardNav] Profile saved successfully:', payload?.profile)
 
       setProfile({ name: payload?.profile?.name || trimmedName, phone: payload?.profile?.phone || trimmedPhone })
-      
-      // Mark profile as complete so modal never appears again
-      sessionStorage.setItem('profileChecked', 'true')
-      
+
       closeProfileModal()
     } catch (error: any) {
       console.error('[DashboardNav] Error saving profile:', error)
