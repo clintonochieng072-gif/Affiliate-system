@@ -37,9 +37,14 @@ export default function GrowthAndLevelPage() {
     const individual = matrix.find((item: any) => String(item.planType).toLowerCase() === 'individual')
     const professional = matrix.find((item: any) => String(item.planType).toLowerCase() === 'professional')
 
+    if (matrix.length === 0) {
+      console.warn('[Growth & Level] Commission matrix is empty – commission_rules table may not be seeded.')
+    }
+
     return {
-      individual: individual?.rewardAmount ?? 0,
-      professional: professional?.rewardAmount ?? 0,
+      individual: individual?.rewardAmount ?? null,
+      professional: professional?.rewardAmount ?? null,
+      hasData: matrix.length > 0,
     }
   }, [data])
 
@@ -65,11 +70,17 @@ export default function GrowthAndLevelPage() {
 
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 space-y-3">
           <div className="text-white font-semibold text-lg">{progress.currentLevelDisplayName}</div>
-          <div className="text-sm text-slate-300">
-            You earn:
-            <br />- {formatCurrency(currentCommission.individual)} per Individual Client
-            <br />- {formatCurrency(currentCommission.professional)} per Professional Client
-          </div>
+          {currentCommission.hasData ? (
+            <div className="text-sm text-slate-300">
+              You earn:
+              <br />- {formatCurrency(currentCommission.individual ?? 0)} per Individual Client
+              <br />- {formatCurrency(currentCommission.professional ?? 0)} per Professional Client
+            </div>
+          ) : (
+            <div className="text-sm text-orange-300 bg-orange-900/20 border border-orange-600/30 rounded-lg p-3">
+              Commission data is not yet configured. Please contact an administrator to seed the commission rules.
+            </div>
+          )}
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-300">Progress to {progress.nextLevelDisplayName || 'top level'}</span>
             <span className="text-slate-400">{progress.progressPercent}%</span>
@@ -84,15 +95,23 @@ export default function GrowthAndLevelPage() {
 
         <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
           {roadmap.map((item: any) => {
-            const individualCommission = item.commissionByLevel?.find((entry: any) => String(entry.planType).toLowerCase() === 'individual')?.rewardAmount ?? 0
-            const professionalCommission = item.commissionByLevel?.find((entry: any) => String(entry.planType).toLowerCase() === 'professional')?.rewardAmount ?? 0
+            const commissionEntries = Array.isArray(item.commissionByLevel) ? item.commissionByLevel : []
+            const individualCommission = commissionEntries.find((entry: any) => String(entry.planType).toLowerCase() === 'individual')?.rewardAmount
+            const professionalCommission = commissionEntries.find((entry: any) => String(entry.planType).toLowerCase() === 'professional')?.rewardAmount
+            const hasCommissionData = commissionEntries.length > 0
 
             return (
               <div key={item.level} className={`rounded-lg p-4 border ${item.reached ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-slate-700 bg-slate-900'}`}>
                 <div className="text-white font-semibold">{item.displayName}</div>
                 <div className="text-xs text-slate-300 mt-2">Commission:</div>
-                <div className="text-xs text-slate-400">Individual: {formatCurrency(individualCommission)}</div>
-                <div className="text-xs text-slate-400">Professional: {formatCurrency(professionalCommission)}</div>
+                {hasCommissionData ? (
+                  <>
+                    <div className="text-xs text-slate-400">Individual: {formatCurrency(individualCommission ?? 0)}</div>
+                    <div className="text-xs text-slate-400">Professional: {formatCurrency(professionalCommission ?? 0)}</div>
+                  </>
+                ) : (
+                  <div className="text-xs text-orange-300 mt-1">Not configured</div>
+                )}
                 {item.nextLevel ? (
                   <div className="text-xs text-slate-400 mt-2">Required referrals: {item.individualRequired} Individual or {item.professionalRequired} Professional</div>
                 ) : (

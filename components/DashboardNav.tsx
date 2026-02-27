@@ -16,6 +16,7 @@ import {
   Wallet,
   TrendingUp,
   BarChart3,
+  ShoppingBag,
 } from 'lucide-react'
 
 export default function DashboardNav() {
@@ -30,12 +31,30 @@ export default function DashboardNav() {
   const [profileError, setProfileError] = useState<string | null>(null)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const closeTimerRef = useRef<number | null>(null)
+  // Once we know the profile is complete (DB or just-saved), never show the modal again.
+  const profileCompleteRef = useRef(false)
 
   useEffect(() => {
     if (!isDashboardOverview) {
       setIsProfileModalOpen(false)
       setIsProfileModalMounted(false)
       return
+    }
+
+    // If we already confirmed profile is complete, skip the fetch entirely.
+    if (profileCompleteRef.current) {
+      return
+    }
+
+    // Also respect a sessionStorage flag so that navigating away and back
+    // within the same browser session never re-triggers the modal.
+    try {
+      if (sessionStorage.getItem('profileComplete') === '1') {
+        profileCompleteRef.current = true
+        return
+      }
+    } catch {
+      // sessionStorage may be unavailable in some contexts – ignore.
     }
 
     let isActive = true
@@ -67,6 +86,9 @@ export default function DashboardNav() {
           setProfileName(currentName)
           setProfilePhone(currentPhone)
         } else {
+          // Profile is already complete in the DB – remember permanently.
+          profileCompleteRef.current = true
+          try { sessionStorage.setItem('profileComplete', '1') } catch {}
           setIsProfileModalOpen(false)
           setIsProfileModalMounted(false)
         }
@@ -155,6 +177,10 @@ export default function DashboardNav() {
 
       setProfile({ name: payload?.profile?.name || trimmedName, phone: payload?.profile?.phone || trimmedPhone })
 
+      // Mark profile as complete so the modal never appears again.
+      profileCompleteRef.current = true
+      try { sessionStorage.setItem('profileComplete', '1') } catch {}
+
       closeProfileModal()
     } catch (error: any) {
       console.error('[DashboardNav] Error saving profile:', error)
@@ -166,6 +192,7 @@ export default function DashboardNav() {
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
+    { href: '/dashboard/products', icon: ShoppingBag, label: 'Products to Promote' },
     { href: '/dashboard/referrals', icon: Users, label: 'My Clients' },
     { href: '/dashboard/earnings', icon: BarChart3, label: 'Earnings' },
     { href: '/dashboard/growth-level', icon: TrendingUp, label: 'Growth & Level' },

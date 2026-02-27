@@ -87,6 +87,14 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
+    if (allCommissionRules.length === 0) {
+      console.warn('⚠️ [Dashboard API] No commission rules found in database. Run prisma db seed to populate commission_rules table.')
+    }
+
+    if (currentLevelCommission.length === 0) {
+      console.warn(`⚠️ [Dashboard API] No commission rules found for current level ${currentLevel}. Commission values will be empty.`)
+    }
+
     const roadmap = Object.entries(LEVEL_PROGRESS_REQUIREMENTS).map(([level, cfg]) => {
       const levelKey = level as typeof affiliate.level
       const commissionByLevel = allCommissionRules
@@ -95,6 +103,10 @@ export async function GET(request: NextRequest) {
           planType: rule.plan.planType,
           rewardAmount: decimalToNumber(rule.rewardAmount),
         }))
+
+      if (commissionByLevel.length === 0) {
+        console.warn(`⚠️ [Dashboard API] No commission rules for level ${level}. Roadmap card will show empty values.`)
+      }
 
       return {
         level,

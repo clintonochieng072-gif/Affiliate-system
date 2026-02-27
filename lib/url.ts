@@ -15,28 +15,32 @@
  * 5. Fallback to localhost:3000
  */
 export function getBaseUrl(request?: Request): string {
-  // Hardcoded production domain - always use this for sales tracking links
-  const PRODUCTION_DOMAIN = 'https://sales.clintonstack.com'
-  
   // 1. Check for explicit NEXT_PUBLIC_SITE_URL (highest priority)
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL
   }
 
-  // 2. Return hardcoded production domain
-  return PRODUCTION_DOMAIN
+  // 2. Fallback to the sales partner dashboard domain
+  return 'https://sales.clintonstack.com'
 }
 
 /**
- * Generate a referral URL with the affiliate code
- * 
- * @param code - The affiliate referral code
- * @param request - Optional request object for server-side URL generation
- * @returns Full referral URL
+ * The target product URL where referred clients land.
+ * Uses TARGET_PRODUCT_URL env var, falls back to leads.clintonstack.com.
  */
-export function getSalesTrackingUrl(code: string, request?: Request): string {
-  const baseUrl = getBaseUrl(request)
-  return `${baseUrl}/r/${code}`
+export function getProductBaseUrl(): string {
+  return process.env.TARGET_PRODUCT_URL || 'https://leads.clintonstack.com'
+}
+
+/**
+ * Generate the referral link agents share with potential clients.
+ * Points directly to the target product with ?ref=CODE.
+ */
+export function getSalesTrackingUrl(code: string, _request?: Request): string {
+  const productUrl = getProductBaseUrl()
+  const url = new URL(productUrl)
+  url.searchParams.set('ref', code)
+  return url.toString()
 }
 
 export const getReferralUrl = getSalesTrackingUrl
@@ -70,7 +74,6 @@ export function isProduction(): boolean {
  */
 export function useBaseUrl(): string {
   if (typeof window === 'undefined') {
-    // Server-side rendering fallback
     return process.env.NEXT_PUBLIC_SITE_URL || 'https://sales.clintonstack.com'
   }
   return getBaseUrl()
@@ -84,11 +87,9 @@ export function useBaseUrl(): string {
  * @returns Full referral URL
  */
 export function buildReferralUrl(code: string): string {
-  const baseUrl = useBaseUrl()
-  return `${baseUrl}/r/${code}`
+  return getSalesTrackingUrl(code)
 }
 
 export function buildSalesTrackingUrl(code: string): string {
-  const baseUrl = useBaseUrl()
-  return `${baseUrl}/r/${code}`
+  return getSalesTrackingUrl(code)
 }

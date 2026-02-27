@@ -17,7 +17,7 @@ export default async function SalesTrackingRedirectPage({ params }: { params: Pr
 
   // Even if code doesn't exist, still redirect to target
   // This prevents revealing valid vs invalid codes
-  const targetUrl = process.env.TARGET_PRODUCT_URL || 'https://example.com'
+  const targetUrl = process.env.TARGET_PRODUCT_URL || 'https://leads.clintonstack.com'
   
   // If valid link exists, append tracking code to URL as query param
   if (trackingLink) {

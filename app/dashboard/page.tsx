@@ -2,12 +2,12 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import useSWR from 'swr'
 import Link from 'next/link'
 import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
-import { BadgeCheck, TrendingUp } from 'lucide-react'
+import { BadgeCheck, TrendingUp, Copy, Check, ExternalLink } from 'lucide-react'
 
 const fetcher = async (url: string) => {
   const response = await fetch(url)
@@ -39,9 +39,14 @@ export default function DashboardOverviewPage() {
     const individual = matrix.find((item: any) => String(item.planType).toLowerCase() === 'individual')
     const professional = matrix.find((item: any) => String(item.planType).toLowerCase() === 'professional')
 
+    if (matrix.length === 0) {
+      console.warn('[Overview] Commission matrix is empty – commission_rules table may not be seeded.')
+    }
+
     return {
-      individual: individual?.rewardAmount ?? 0,
-      professional: professional?.rewardAmount ?? 0,
+      individual: individual?.rewardAmount ?? null,
+      professional: professional?.rewardAmount ?? null,
+      hasData: matrix.length > 0,
     }
   }, [data])
 
@@ -79,6 +84,30 @@ export default function DashboardOverviewPage() {
   const leaderboardPreview = Array.isArray(data.leaderboardPreview) ? data.leaderboardPreview : []
   const welcomeName = String(data?.affiliate?.name || session?.user?.name || 'Sales Partner').trim() || 'Sales Partner'
 
+  // Derive first referral link
+  const salesLinks = Array.isArray(data?.salesTrackingLinks) ? data.salesTrackingLinks : []
+  const firstLink = salesLinks.length > 0 ? salesLinks[0] : null
+  const referralUrl = firstLink
+    ? `https://leads.clintonstack.com?ref=${firstLink.agentCode}`
+    : null
+
+  const [copiedLink, setCopiedLink] = useState(false)
+  const copyReferralLink = useCallback(async () => {
+    if (!referralUrl) return
+    try {
+      await navigator.clipboard.writeText(referralUrl)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = referralUrl
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    setCopiedLink(true)
+    setTimeout(() => setCopiedLink(false), 2000)
+  }, [referralUrl])
+
   return (
     <div className="min-h-screen bg-slate-950">
       <DashboardNav />
@@ -93,6 +122,44 @@ export default function DashboardOverviewPage() {
             client count grows.
           </p>
         </section>
+
+        {/* Your Sales Link */}
+        {referralUrl ? (
+          <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
+            <h2 className="text-white font-semibold mb-2 inline-flex items-center gap-2">
+              <ExternalLink className="w-4 h-4 text-blue-400" />
+              Your Sales Link
+            </h2>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-blue-300 font-mono break-all select-all">
+                {referralUrl}
+              </div>
+              <button
+                onClick={copyReferralLink}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all shrink-0 bg-blue-600 hover:bg-blue-500 text-white"
+              >
+                {copiedLink ? <><Check className="w-4 h-4" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Link</>}
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mt-2">
+              Share this link with clients. Visit{' '}
+              <Link href="/dashboard/products" className="text-blue-300 hover:text-blue-200 underline">Products to Promote</Link>{' '}
+              for product details and more links.
+            </p>
+          </section>
+        ) : (
+          <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
+            <h2 className="text-white font-semibold mb-2 inline-flex items-center gap-2">
+              <ExternalLink className="w-4 h-4 text-blue-400" />
+              Your Sales Link
+            </h2>
+            <p className="text-slate-400 text-sm">
+              You haven&apos;t generated a sales link yet.{' '}
+              <Link href="/dashboard/products" className="text-blue-300 hover:text-blue-200 underline">Go to Products to Promote</Link>{' '}
+              to create one.
+            </p>
+          </section>
+        )}
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5">
@@ -111,11 +178,17 @@ export default function DashboardOverviewPage() {
 
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
             <h2 className="text-white font-semibold mb-2">Commission per Active Client</h2>
-            <p className="text-slate-300 text-sm leading-6">
-              You earn:
-              <br />- {formatCurrency(currentCommission.individual)} per Individual Client
-              <br />- {formatCurrency(currentCommission.professional)} per Professional Client
-            </p>
+            {currentCommission.hasData ? (
+              <p className="text-slate-300 text-sm leading-6">
+                You earn:
+                <br />- {formatCurrency(currentCommission.individual ?? 0)} per Individual Client
+                <br />- {formatCurrency(currentCommission.professional ?? 0)} per Professional Client
+              </p>
+            ) : (
+              <p className="text-sm text-orange-300 bg-orange-900/20 border border-orange-600/30 rounded-lg p-3">
+                Commission data is not yet configured.
+              </p>
+            )}
           </div>
         </section>
 
@@ -144,8 +217,10 @@ export default function DashboardOverviewPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
             {roadmap.map((item: any) => {
-              const individualCommission = item.commissionByLevel?.find((entry: any) => String(entry.planType).toLowerCase() === 'individual')?.rewardAmount ?? 0
-              const professionalCommission = item.commissionByLevel?.find((entry: any) => String(entry.planType).toLowerCase() === 'professional')?.rewardAmount ?? 0
+              const commissionEntries = Array.isArray(item.commissionByLevel) ? item.commissionByLevel : []
+              const individualCommission = commissionEntries.find((entry: any) => String(entry.planType).toLowerCase() === 'individual')?.rewardAmount
+              const professionalCommission = commissionEntries.find((entry: any) => String(entry.planType).toLowerCase() === 'professional')?.rewardAmount
+              const hasCommissionData = commissionEntries.length > 0
 
               return (
                 <div
@@ -154,8 +229,14 @@ export default function DashboardOverviewPage() {
                 >
                   <div className="text-white font-semibold">{item.displayName}</div>
                   <div className="text-xs text-slate-300 mt-2">Commission:</div>
-                  <div className="text-xs text-slate-400">Individual: {formatCurrency(individualCommission)}</div>
-                  <div className="text-xs text-slate-400">Professional: {formatCurrency(professionalCommission)}</div>
+                  {hasCommissionData ? (
+                    <>
+                      <div className="text-xs text-slate-400">Individual: {formatCurrency(individualCommission ?? 0)}</div>
+                      <div className="text-xs text-slate-400">Professional: {formatCurrency(professionalCommission ?? 0)}</div>
+                    </>
+                  ) : (
+                    <div className="text-xs text-orange-300 mt-1">Not configured</div>
+                  )}
                   {item.nextLevel ? (
                     <div className="text-xs text-slate-400 mt-2">
                       Move up with {item.individualRequired} Individual Clients or {item.professionalRequired} Professional Clients.
