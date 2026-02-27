@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
           id: true,
           name: true,
           email: true,
+          phone: true,
           level: true,
           totalEarned: true,
           totalReferralsIndividual: true,
@@ -179,6 +180,8 @@ export async function GET(request: NextRequest) {
         id: partner.id,
         name: partner.name,
         email: partner.email,
+        displayName: String(partner.name || '').trim() || partner.email,
+        phone: String(partner.phone || '').trim() || 'Not provided',
         level: partner.level,
         totalReferrals: partner.totalReferralsIndividual + partner.totalReferralsProfessional,
         totalEarnings: decimalToNumber(partner.totalEarned),
@@ -339,9 +342,9 @@ export async function GET(request: NextRequest) {
 
       const [leaderboardRows, linksRows, referralRows, withdrawalRows, notificationRows] = await Promise.all([
         prisma.$queryRawUnsafe<Array<any>>(
-          `select "id", "name", "email", "level", "${earningsColumn}" as "totalEarnings", "totalReferralsIndividual", "totalReferralsProfessional", "createdAt"
+          `select "id", "name", "email", "phone", "level", "${earningsColumn}" as "totalEarnings", "totalReferralsIndividual", "totalReferralsProfessional", "createdAt"
            from "affiliates"
-            where "role"::text = 'AFFILIATE'
+            where lower("role"::text) = 'affiliate'
            order by "${earningsColumn}" desc, "createdAt" asc
            limit 10`
         ),
@@ -429,6 +432,8 @@ export async function GET(request: NextRequest) {
           id: partner.id,
           name: partner.name,
           email: partner.email,
+          displayName: String(partner.name || '').trim() || partner.email,
+          phone: String(partner.phone || '').trim() || 'Not provided',
           level: partner.level,
           totalReferrals: Number(partner.totalReferralsIndividual || 0) + Number(partner.totalReferralsProfessional || 0),
           totalEarnings: Number(partner.totalEarnings || 0),

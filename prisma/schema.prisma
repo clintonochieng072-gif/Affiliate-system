@@ -42,6 +42,7 @@ model Affiliate {
   pendingBalance   Decimal  @default(0) @db.Decimal(12, 2)
   availableBalance Decimal  @default(0) @db.Decimal(12, 2)
   totalEarned      Decimal  @default(0) @db.Decimal(12, 2)
+  profileCompleted Boolean  @default(false)
   isFrozen         Boolean  @default(false)
   promotedAt       DateTime?
   level4EligibleAt DateTime?

@@ -261,8 +261,8 @@ export default function DashboardOverviewPage() {
             {leaderboardPreview.map((item: any) => (
               <div key={item.id} className="rounded-lg border border-slate-800 bg-slate-800/40 p-3 flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-white text-sm">#{item.rank} {item.name || item.email}</div>
-                  <div className="text-xs text-slate-400">{item.level.replace('LEVEL_', 'Level ')} • {item.totalReferrals} clients</div>
+                  <div className="text-white text-sm">#{item.rank} {item.displayName || item.name || item.email}</div>
+                  <div className="text-xs text-slate-400">{item.phone || 'Not provided'}</div>
                 </div>
                 <div className="text-sm font-semibold text-emerald-400">{formatCurrency(item.totalEarnings)}</div>
               </div>

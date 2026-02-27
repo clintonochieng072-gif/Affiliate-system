@@ -14,23 +14,36 @@ export async function GET() {
 
     signedInEmail = session.user.email
 
-    const affiliate = await prisma.affiliate.findUnique({
-      where: { email: session.user.email },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        level: true,
-        role: true,
-      },
-    })
+    const columns = await prisma.$queryRawUnsafe<Array<{ column_name: string }>>(
+      `select column_name from information_schema.columns where table_schema='public' and table_name='affiliates'`
+    )
+    const hasProfileCompleted = columns.some((col) => col.column_name === 'profileCompleted')
+
+    const affiliateRows = await prisma.$queryRawUnsafe<Array<any>>(
+      `select "id", "email", "name", "phone", "level", "role"${
+        hasProfileCompleted ? ', "profileCompleted"' : ''
+      } from "affiliates" where "email" = $1 limit 1`,
+      session.user.email
+    )
+
+    const affiliate = affiliateRows[0]
 
     if (!affiliate) {
       return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ profile: affiliate })
+    const hasName = Boolean(String(affiliate.name || '').trim())
+    const hasPhone = Boolean(String(affiliate.phone || '').trim())
+    const profileCompleted = hasProfileCompleted
+      ? Boolean(affiliate.profileCompleted)
+      : hasName && hasPhone
+
+    return NextResponse.json({
+      profile: {
+        ...affiliate,
+        profileCompleted,
+      },
+    })
   } catch (error) {
     return NextResponse.json({
       profile: {
@@ -40,6 +53,7 @@ export async function GET() {
         phone: '',
         level: 'LEVEL_1',
         role: 'AFFILIATE',
+        profileCompleted: false,
       },
       _meta: {
         degraded: true,
@@ -64,19 +78,44 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 })
     }
 
-    const updated = await prisma.affiliate.update({
-      where: { email: session.user.email },
-      data: { name, phone },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        level: true,
+    const columns = await prisma.$queryRawUnsafe<Array<{ column_name: string }>>(
+      `select column_name from information_schema.columns where table_schema='public' and table_name='affiliates'`
+    )
+    const hasProfileCompleted = columns.some((col) => col.column_name === 'profileCompleted')
+
+    if (hasProfileCompleted) {
+      await prisma.$executeRawUnsafe(
+        `update "affiliates" set "name" = $1, "phone" = $2, "profileCompleted" = true where "email" = $3`,
+        name,
+        phone,
+        session.user.email
+      )
+    } else {
+      await prisma.$executeRawUnsafe(
+        `update "affiliates" set "name" = $1, "phone" = $2 where "email" = $3`,
+        name,
+        phone,
+        session.user.email
+      )
+    }
+
+    const updatedRows = await prisma.$queryRawUnsafe<Array<any>>(
+      `select "id", "email", "name", "phone", "level" from "affiliates" where "email" = $1 limit 1`,
+      session.user.email
+    )
+    const updated = updatedRows[0]
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      profile: {
+        ...updated,
+        profileCompleted: true,
       },
     })
-
-    return NextResponse.json({ success: true, profile: updated })
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

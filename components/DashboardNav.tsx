@@ -23,7 +23,7 @@ export default function DashboardNav() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const isDashboardOverview = pathname === '/dashboard'
-  const [profile, setProfile] = useState<{ name: string; phone: string } | null>(null)
+  const [profile, setProfile] = useState<{ name: string; phone: string; profileCompleted: boolean } | null>(null)
   const [isProfileModalMounted, setIsProfileModalMounted] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [profileName, setProfileName] = useState('')
@@ -69,18 +69,25 @@ export default function DashboardNav() {
         const payload = await response.json()
         const currentName = String(payload?.profile?.name || '').trim()
         const currentPhone = String(payload?.profile?.phone || '').trim()
-        const hasName = Boolean(currentName)
-        const hasPhone = Boolean(currentPhone)
+        const isProfileCompleted = Boolean(payload?.profile?.profileCompleted)
 
-        console.log('[DashboardNav] Profile check:', { hasName, hasPhone, name: currentName, phone: currentPhone })
+        console.log('[DashboardNav] Profile check:', {
+          profileCompleted: isProfileCompleted,
+          name: currentName,
+          phone: currentPhone,
+        })
 
         if (!isActive) {
           return
         }
 
-        setProfile({ name: currentName, phone: currentPhone })
+        setProfile({
+          name: currentName,
+          phone: currentPhone,
+          profileCompleted: isProfileCompleted,
+        })
 
-        if (!hasName || !hasPhone) {
+        if (!isProfileCompleted) {
           setIsProfileModalMounted(true)
           requestAnimationFrame(() => setIsProfileModalOpen(true))
           setProfileName(currentName)
@@ -175,7 +182,11 @@ export default function DashboardNav() {
 
       console.log('[DashboardNav] Profile saved successfully:', payload?.profile)
 
-      setProfile({ name: payload?.profile?.name || trimmedName, phone: payload?.profile?.phone || trimmedPhone })
+      setProfile({
+        name: payload?.profile?.name || trimmedName,
+        phone: payload?.profile?.phone || trimmedPhone,
+        profileCompleted: true,
+      })
 
       // Mark profile as complete so the modal never appears again.
       profileCompleteRef.current = true

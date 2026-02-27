@@ -68,8 +68,7 @@ export default function LeaderboardPage() {
                 <tr>
                   <th className="px-4 py-3 text-left">#</th>
                   <th className="px-4 py-3 text-left">Name</th>
-                  <th className="px-4 py-3 text-left">Level</th>
-                  <th className="px-4 py-3 text-left">Total Referrals</th>
+                  <th className="px-4 py-3 text-left">Phone Number</th>
                   <th className="px-4 py-3 text-left">Total Earnings</th>
                 </tr>
               </thead>
@@ -77,9 +76,8 @@ export default function LeaderboardPage() {
                 {performers.map((item: any) => (
                   <tr key={item.id} className="border-t border-slate-800 hover:bg-slate-800/50">
                     <td className="px-4 py-3 text-slate-400">{item.rank}</td>
-                    <td className="px-4 py-3 text-white">{item.name || item.email}</td>
-                    <td className="px-4 py-3 text-slate-300">{item.level.replace('LEVEL_', 'Level ')}</td>
-                    <td className="px-4 py-3 text-slate-300">{item.totalReferrals}</td>
+                    <td className="px-4 py-3 text-white">{item.displayName || item.name || item.email}</td>
+                    <td className="px-4 py-3 text-slate-300">{item.phone || 'Not provided'}</td>
                     <td className="px-4 py-3 text-emerald-400 font-medium">{formatCurrency(item.totalEarnings)}</td>
                   </tr>
                 ))}
@@ -91,9 +89,8 @@ export default function LeaderboardPage() {
         <div className="md:hidden space-y-3">
           {performers.map((item: any) => (
             <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-1">
-              <div className="text-white font-medium">#{item.rank} {item.name || item.email}</div>
-              <div className="text-sm text-slate-300">Level: {item.level.replace('LEVEL_', 'Level ')}</div>
-              <div className="text-sm text-slate-300">Total Referrals: {item.totalReferrals}</div>
+              <div className="text-white font-medium">#{item.rank} {item.displayName || item.name || item.email}</div>
+              <div className="text-sm text-slate-300">Phone: {item.phone || 'Not provided'}</div>
               <div className="text-sm text-emerald-400 font-semibold">Total Earnings: {formatCurrency(item.totalEarnings)}</div>
             </div>
           ))}
