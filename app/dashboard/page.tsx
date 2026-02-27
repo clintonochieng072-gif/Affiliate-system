@@ -39,7 +39,7 @@ export default function DashboardOverviewPage() {
     const individual = matrix.find((item: any) => String(item.planType).toLowerCase() === 'individual')
     const professional = matrix.find((item: any) => String(item.planType).toLowerCase() === 'professional')
 
-    if (matrix.length === 0) {
+    if (data && matrix.length === 0) {
       console.warn('[Overview] Commission matrix is empty – commission_rules table may not be seeded.')
     }
 
@@ -49,6 +49,29 @@ export default function DashboardOverviewPage() {
       hasData: matrix.length > 0,
     }
   }, [data])
+
+  const salesLinks = Array.isArray(data?.salesTrackingLinks) ? data.salesTrackingLinks : []
+  const firstLink = salesLinks.length > 0 ? salesLinks[0] : null
+  const referralUrl = firstLink
+    ? `https://leads.clintonstack.com?ref=${firstLink.agentCode}`
+    : null
+
+  const [copiedLink, setCopiedLink] = useState(false)
+  const copyReferralLink = useCallback(async () => {
+    if (!referralUrl) return
+    try {
+      await navigator.clipboard.writeText(referralUrl)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = referralUrl
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    setCopiedLink(true)
+    setTimeout(() => setCopiedLink(false), 2000)
+  }, [referralUrl])
 
   if (status === 'loading' || isLoading) {
     return (
@@ -83,30 +106,6 @@ export default function DashboardOverviewPage() {
   const roadmap = Array.isArray(data.roadmap) ? data.roadmap : []
   const leaderboardPreview = Array.isArray(data.leaderboardPreview) ? data.leaderboardPreview : []
   const welcomeName = String(data?.affiliate?.name || session?.user?.name || 'Sales Partner').trim() || 'Sales Partner'
-
-  // Derive first referral link
-  const salesLinks = Array.isArray(data?.salesTrackingLinks) ? data.salesTrackingLinks : []
-  const firstLink = salesLinks.length > 0 ? salesLinks[0] : null
-  const referralUrl = firstLink
-    ? `https://leads.clintonstack.com?ref=${firstLink.agentCode}`
-    : null
-
-  const [copiedLink, setCopiedLink] = useState(false)
-  const copyReferralLink = useCallback(async () => {
-    if (!referralUrl) return
-    try {
-      await navigator.clipboard.writeText(referralUrl)
-    } catch {
-      const ta = document.createElement('textarea')
-      ta.value = referralUrl
-      document.body.appendChild(ta)
-      ta.select()
-      document.execCommand('copy')
-      document.body.removeChild(ta)
-    }
-    setCopiedLink(true)
-    setTimeout(() => setCopiedLink(false), 2000)
-  }, [referralUrl])
 
   return (
     <div className="min-h-screen bg-slate-950">

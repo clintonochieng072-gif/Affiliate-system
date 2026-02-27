@@ -35,6 +35,7 @@ export interface DarajaB2CRequest {
 
 export interface DarajaB2CResponse {
   accepted: boolean
+  httpStatus: number
   conversationId?: string
   originatorConversationId?: string
   responseCode?: string
@@ -132,6 +133,10 @@ function getDarajaCommandId(environment: DarajaEnvironment): DarajaCommandId {
   return 'BusinessPayment'
 }
 
+function isLikelyPublicUrl(url: string): boolean {
+  return !/localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(url)
+}
+
 export function getDarajaConfig(): DarajaConfig {
   const environment = getDarajaEnvironment()
   const baseUrl = environment === 'live' ? DARAJA_LIVE_BASE_URL : DARAJA_SANDBOX_BASE_URL
@@ -145,9 +150,7 @@ export function getDarajaConfig(): DarajaConfig {
     getEnvValue(withSuffix(environment, 'DARAJA_TIMEOUT_URL')) ||
     `${callbackBaseUrl}/api/webhooks/daraja/timeout`
 
-  const configuredSecurityCredential = getEnvValue(withSuffix(environment, 'DARAJA_SECURITY_CREDENTIAL'), {
-    trim: false,
-  })
+  const configuredSecurityCredential = getEnvValue(withSuffix(environment, 'DARAJA_SECURITY_CREDENTIAL'))
   const initiatorPassword = getEnvValue(withSuffix(environment, 'DARAJA_INITIATOR_PASSWORD'))
   const certificatePem = getEnvValue(withSuffix(environment, 'DARAJA_PUBLIC_CERTIFICATE'))
 
@@ -178,6 +181,15 @@ export function getDarajaConfig(): DarajaConfig {
     resultUrl,
     timeoutUrl,
     callbackToken: getEnvValue(withSuffix(environment, 'DARAJA_CALLBACK_TOKEN')) || undefined,
+  }
+
+  if (!isLikelyPublicUrl(config.resultUrl) || !isLikelyPublicUrl(config.timeoutUrl)) {
+    console.warn('⚠️ Daraja callback URL may be unreachable from Safaricom', {
+      environment,
+      resultUrl: config.resultUrl,
+      timeoutUrl: config.timeoutUrl,
+      note: 'Use a publicly accessible HTTPS URL (e.g., deployed domain or tunnel).',
+    })
   }
 
   const required: Array<[string, string]> = [
@@ -271,7 +283,11 @@ export async function getDarajaAccessToken(config: DarajaConfig): Promise<string
   const body = await response.json()
 
   if (!response.ok || !body.access_token) {
-    throw new Error(body.errorMessage || body.error_description || 'Failed to obtain Daraja access token')
+    throw new Error(
+      `Daraja token request failed (HTTP ${response.status}): ${
+        body.errorMessage || body.error_description || 'Failed to obtain Daraja access token'
+      }`
+    )
   }
 
   return body.access_token as string
@@ -350,13 +366,19 @@ export async function initiateDarajaB2CTransfer(
     { retries: 2, retryDelayMs: 1000 }
   )
 
-  const body = await response.json()
+  let body: any = {}
+  try {
+    body = await response.json()
+  } catch {
+    body = { errorMessage: 'Non-JSON response from Daraja B2C endpoint' }
+  }
 
   const responseCode = body.ResponseCode as string | undefined
   const accepted = response.ok && responseCode === '0'
 
   return {
     accepted,
+    httpStatus: response.status,
     conversationId: body.ConversationID,
     originatorConversationId: body.OriginatorConversationID,
     responseCode,

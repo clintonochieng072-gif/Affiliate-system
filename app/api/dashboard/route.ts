@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import {
   computeProgressToNextLevel,
+  ensureDefaultCommissionMatrix,
   getCommissionMatrixForLevel,
   getLevelLabel,
   getSalesLevelDisplayName,
@@ -25,6 +26,8 @@ export async function GET(request: NextRequest) {
 
     signedInEmail = session.user.email
     signedInName = session.user.name || 'Sales Partner'
+
+    await ensureDefaultCommissionMatrix(prisma)
 
     const affiliate = await prisma.affiliate.findUnique({
       where: { email: session.user.email },

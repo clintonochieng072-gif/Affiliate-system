@@ -37,7 +37,7 @@ export default function GrowthAndLevelPage() {
     const individual = matrix.find((item: any) => String(item.planType).toLowerCase() === 'individual')
     const professional = matrix.find((item: any) => String(item.planType).toLowerCase() === 'professional')
 
-    if (matrix.length === 0) {
+    if (data && matrix.length === 0) {
       console.warn('[Growth & Level] Commission matrix is empty – commission_rules table may not be seeded.')
     }
 

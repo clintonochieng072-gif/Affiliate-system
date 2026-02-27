@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { getCommissionForPlanAndLevel } from '@/lib/commission'
+import { ensureDefaultCommissionMatrix, getCommissionForPlanAndLevel } from '@/lib/commission'
 import { getPromotionTarget, getLevelLabel } from '@/lib/commission'
 import { AffiliateLevel } from '@prisma/client'
 import crypto from 'crypto'
@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
       )
     }
     const { agent_code, client_name, user_email, plan_type, reference } = body
+
+    await ensureDefaultCommissionMatrix(prisma)
 
     if (!agent_code || !user_email || !plan_type || !reference) {
       return NextResponse.json(

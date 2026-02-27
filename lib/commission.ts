@@ -123,6 +123,76 @@ export async function getCommissionForPlanAndLevel(
   return { plan, rewardAmount: Number(rule.rewardAmount) }
 }
 
+const DEFAULT_COMMISSION_MATRIX: Record<AffiliateLevel, { Individual: number; Professional: number }> = {
+  LEVEL_1: { Individual: 300, Professional: 800 },
+  LEVEL_2: { Individual: 400, Professional: 1000 },
+  LEVEL_3: { Individual: 500, Professional: 1300 },
+  LEVEL_4: { Individual: 600, Professional: 1500 },
+}
+
+export async function ensureDefaultCommissionMatrix(prisma: PrismaClient) {
+  const existingCount = await prisma.commissionRule.count()
+  if (existingCount > 0) return
+
+  const [individualPlan, professionalPlan] = await Promise.all([
+    prisma.plan.upsert({
+      where: { planType: 'Individual' },
+      update: { isActive: true, name: 'Individual Plan' },
+      create: {
+        planType: 'Individual',
+        name: 'Individual Plan',
+        isActive: true,
+      },
+    }),
+    prisma.plan.upsert({
+      where: { planType: 'Professional' },
+      update: { isActive: true, name: 'Professional Plan' },
+      create: {
+        planType: 'Professional',
+        name: 'Professional Plan',
+        isActive: true,
+      },
+    }),
+  ])
+
+  await prisma.$transaction(
+    (Object.keys(DEFAULT_COMMISSION_MATRIX) as AffiliateLevel[]).flatMap((level) => {
+      const matrix = DEFAULT_COMMISSION_MATRIX[level]
+
+      return [
+        prisma.commissionRule.upsert({
+          where: {
+            affiliateLevel_planId: {
+              affiliateLevel: level,
+              planId: individualPlan.id,
+            },
+          },
+          update: { rewardAmount: matrix.Individual },
+          create: {
+            affiliateLevel: level,
+            planId: individualPlan.id,
+            rewardAmount: matrix.Individual,
+          },
+        }),
+        prisma.commissionRule.upsert({
+          where: {
+            affiliateLevel_planId: {
+              affiliateLevel: level,
+              planId: professionalPlan.id,
+            },
+          },
+          update: { rewardAmount: matrix.Professional },
+          create: {
+            affiliateLevel: level,
+            planId: professionalPlan.id,
+            rewardAmount: matrix.Professional,
+          },
+        }),
+      ]
+    })
+  )
+}
+
 export async function getCommissionMatrixForLevel(
   prisma: PrismaClient,
   affiliateLevel: AffiliateLevel

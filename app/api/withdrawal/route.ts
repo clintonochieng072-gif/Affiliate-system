@@ -128,12 +128,24 @@ export async function POST(request: NextRequest) {
           String(darajaResponse.raw?.errorMessage || darajaResponse.raw?.ResultDesc || '') ||
           'Daraja B2C request rejected'
 
+        console.error('Daraja B2C rejected withdrawal', {
+          withdrawalId: withdrawal.id,
+          affiliateId: affiliate.id,
+          httpStatus: darajaResponse.httpStatus,
+          responseCode: darajaResponse.responseCode,
+          responseDescription: darajaResponse.responseDescription,
+          customerMessage: darajaResponse.customerMessage,
+          rawErrorMessage: darajaResponse.raw?.errorMessage,
+        })
+
+        const failureDetails = `HTTP ${darajaResponse.httpStatus}; ResponseCode ${darajaResponse.responseCode || 'N/A'}; ${failureMessage}`
+
         await prisma.$transaction(async (tx) => {
           await tx.withdrawal.update({
             where: { id: withdrawal.id },
             data: {
               status: 'failed',
-              failureReason: failureMessage,
+              failureReason: failureDetails,
               providerReference: darajaResponse.conversationId || null,
             },
           })
@@ -151,7 +163,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Withdrawal provider rejected request',
-            details: failureMessage,
+            details: failureDetails,
+            daraja: {
+              httpStatus: darajaResponse.httpStatus,
+              responseCode: darajaResponse.responseCode,
+              responseDescription: darajaResponse.responseDescription,
+              customerMessage: darajaResponse.customerMessage,
+            },
           },
           { status: 400 }
         )
