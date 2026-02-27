@@ -3,12 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { decimalToNumber } from '@/lib/utils'
-
-const ADMIN_EMAIL = 'clintonstack4@gmail.com'
-const PLAN_PRICES: Record<string, number> = {
-  Individual: 3700,
-  Professional: 7600,
-}
+import { ADMIN_EMAIL, PLAN_PRICES } from '@/lib/constants'
 
 export async function GET(request: NextRequest) {
   try {
@@ -203,6 +198,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Admin API error:', error)
     return NextResponse.json({
+      error: 'Internal server error',
       stats: {
         totalAffiliates: 0,
         totalRevenueGenerated: 0,
@@ -220,6 +216,6 @@ export async function GET(request: NextRequest) {
         degraded: true,
         message: 'Admin fallback response due to backend data error',
       },
-    })
+    }, { status: 500 })
   }
 }

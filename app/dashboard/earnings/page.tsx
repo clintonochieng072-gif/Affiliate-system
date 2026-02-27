@@ -65,10 +65,9 @@ export default function EarningsPage() {
           <p className="text-slate-400 text-sm">A simple view of your earnings, available balance, and pending balance.</p>
         </div>
 
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Card title="Total Earnings" value={formatCurrency(summary.totalSalesEarnings)} />
           <Card title="Available Balance" value={formatCurrency(summary.availableSalesEarnings)} />
-          <Card title="Pending Balance" value={formatCurrency(summary.pendingSalesEarnings)} />
         </section>
 
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">

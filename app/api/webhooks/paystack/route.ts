@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
         where: { id: withdrawal.id },
         data: {
           status: 'completed',
+          completedAt: new Date(),
           providerReference: transferCode || withdrawal.providerReference,
           failureReason: null,
         },

@@ -6,8 +6,7 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { prisma } from './prisma'
-
-const ADMIN_EMAIL = 'clintonstack4@gmail.com'
+import { ADMIN_EMAIL } from './constants'
 
 // Verify environment variables are loaded
 if (!process.env.GOOGLE_CLIENT_ID) {
@@ -38,8 +37,8 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   
-  // Enable debug mode to see detailed error logs
-  debug: true,
+  // Enable debug mode only in development
+  debug: process.env.NODE_ENV === 'development',
   
   // Custom pages
   pages: {
@@ -60,12 +59,15 @@ export const authOptions: NextAuthOptions = {
       // On successful Google sign-in, create sales agent record if it doesn't exist
       if (account?.provider === 'google' && user.email) {
         try {
+          // Only set role on update; never overwrite user-entered name
+          const updateData: Record<string, unknown> = {}
+          if (user.email === ADMIN_EMAIL) {
+            updateData.role = 'ADMIN'
+          }
+
           await prisma.affiliate.upsert({
             where: { email: user.email },
-            update: {
-              name: user.name || user.email,
-              role: user.email === ADMIN_EMAIL ? 'ADMIN' : undefined,
-            },
+            update: updateData,
             create: {
               name: user.name || user.email,
               email: user.email,

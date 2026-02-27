@@ -1,9 +1,16 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { decimalToNumber } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const full = searchParams.get('full') === 'true'
     const take = full ? 200 : 10
@@ -15,8 +22,6 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        phone: true,
-        email: true,
         level: true,
         totalEarned: true,
         totalReferralsIndividual: true,
@@ -29,8 +34,6 @@ export async function GET(request: NextRequest) {
         rank: index + 1,
         id: affiliate.id,
         name: affiliate.name,
-        phone: affiliate.phone,
-        email: affiliate.email,
         level: affiliate.level,
         totalReferrals: affiliate.totalReferralsIndividual + affiliate.totalReferralsProfessional,
         totalReferralsIndividual: affiliate.totalReferralsIndividual,

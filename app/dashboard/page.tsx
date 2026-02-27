@@ -192,12 +192,11 @@ export default function DashboardOverviewPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
           <SummaryCard title="Individual Clients" value={summary.totalReferralsIndividual} />
           <SummaryCard title="Professional Clients" value={summary.totalReferralsProfessional} />
           <SummaryCard title="Total Earnings" value={formatCurrency(summary.totalSalesEarnings)} />
           <SummaryCard title="Available Balance" value={formatCurrency(summary.availableSalesEarnings)} />
-          <SummaryCard title="Pending Balance" value={formatCurrency(summary.pendingSalesEarnings)} />
         </section>
 
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">

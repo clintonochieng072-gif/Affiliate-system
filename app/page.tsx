@@ -1,15 +1,10 @@
 /**
  * Landing Page Server Component
- * Wraps client component with SessionProvider
+ * SessionProvider is already in layout.tsx – no need to double-wrap
  */
 
-import { Providers } from './providers'
 import PageClient from './page-client'
 
 export default function Home() {
-  return (
-    <Providers>
-      <PageClient />
-    </Providers>
-  )
+  return <PageClient />
 }

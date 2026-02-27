@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { canTransitionWithdrawal } from '@/lib/withdrawal'
-
-const ADMIN_EMAIL = 'clintonstack4@gmail.com'
+import { ADMIN_EMAIL } from '@/lib/constants'
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions)

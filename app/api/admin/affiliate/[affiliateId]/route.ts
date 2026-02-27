@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { AffiliateLevel } from '@prisma/client'
-
-const ADMIN_EMAIL = 'clintonstack4@gmail.com'
+import { ADMIN_EMAIL } from '@/lib/constants'
+import { getLevelLabel } from '@/lib/commission'
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions)
@@ -58,6 +58,33 @@ export async function PATCH(
         isFrozen: true,
       },
     })
+
+    // Notify affiliate of admin-initiated changes
+    if (level) {
+      await prisma.notification.create({
+        data: {
+          affiliateId,
+          roleTarget: 'AFFILIATE',
+          type: 'promotion',
+          title: 'Level updated by admin',
+          message: `Your level has been updated to ${getLevelLabel(level)}.`,
+        },
+      })
+    }
+
+    if (typeof isFrozen === 'boolean') {
+      await prisma.notification.create({
+        data: {
+          affiliateId,
+          roleTarget: 'AFFILIATE',
+          type: 'account_update',
+          title: isFrozen ? 'Account frozen' : 'Account unfrozen',
+          message: isFrozen
+            ? 'Your account has been temporarily frozen by an administrator.'
+            : 'Your account has been unfrozen. You can resume normal activity.',
+        },
+      })
+    }
 
     return NextResponse.json({ success: true, affiliate: updated })
   } catch (error) {

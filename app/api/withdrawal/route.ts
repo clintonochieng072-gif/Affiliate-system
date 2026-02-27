@@ -7,7 +7,7 @@ import {
   normalizeKenyanPhoneForDaraja,
 } from '@/lib/daraja'
 
-const MIN_WITHDRAWAL_AMOUNT = 600
+import { MIN_WITHDRAWAL_AMOUNT } from '@/lib/constants'
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,31 +49,14 @@ export async function POST(request: NextRequest) {
 
     const affiliate = await prisma.affiliate.findUnique({
       where: { email: session.user.email },
-      include: {
-        withdrawals: {
-          where: {
-            status: { in: ['pending', 'processing'] },
-          },
-          select: { id: true, status: true, createdAt: true },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
+      select: {
+        id: true,
+        availableBalance: true,
       },
     })
 
     if (!affiliate) {
       return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
-    }
-
-    if (affiliate.withdrawals.length > 0) {
-      return NextResponse.json(
-        {
-          error: 'You already have an active withdrawal request',
-          activeWithdrawalId: affiliate.withdrawals[0].id,
-          status: affiliate.withdrawals[0].status,
-        },
-        { status: 409 }
-      )
     }
 
     if (amount > Number(affiliate.availableBalance)) {
@@ -88,6 +71,20 @@ export async function POST(request: NextRequest) {
     }
 
     const withdrawal = await prisma.$transaction(async (tx) => {
+      // Check for active withdrawals inside the transaction to prevent race conditions
+      const activeWithdrawals = await tx.withdrawal.findMany({
+        where: {
+          affiliateId: affiliate.id,
+          status: { in: ['pending', 'processing'] },
+        },
+        select: { id: true, status: true },
+        take: 1,
+      })
+
+      if (activeWithdrawals.length > 0) {
+        throw new Error('ACTIVE_WITHDRAWAL_EXISTS')
+      }
+
       const balanceUpdate = await tx.affiliate.updateMany({
         where: {
           id: affiliate.id,
@@ -211,6 +208,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Insufficient balance' },
         { status: 400 }
+      )
+    }
+
+    if (error?.message === 'ACTIVE_WITHDRAWAL_EXISTS') {
+      return NextResponse.json(
+        { error: 'You already have an active withdrawal request' },
+        { status: 409 }
       )
     }
 

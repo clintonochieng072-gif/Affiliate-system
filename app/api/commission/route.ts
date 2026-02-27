@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCommissionForPlanAndLevel } from '@/lib/commission'
 import { getPromotionTarget, getLevelLabel } from '@/lib/commission'
 import { AffiliateLevel } from '@prisma/client'
+import crypto from 'crypto'
 
 interface CommissionPayload {
   agent_code?: string
@@ -24,7 +25,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!authHeader || authHeader !== `Bearer ${webhookSecret}`) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const providedToken = authHeader.slice(7)
+    const expectedToken = webhookSecret
+
+    // Timing-safe comparison to prevent timing attacks
+    let isValid = false
+    try {
+      isValid =
+        providedToken.length === expectedToken.length &&
+        crypto.timingSafeEqual(
+          Buffer.from(providedToken, 'utf8'),
+          Buffer.from(expectedToken, 'utf8')
+        )
+    } catch {
+      isValid = false
+    }
+
+    if (!isValid) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
@@ -281,18 +305,6 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     service: 'Commission Activation API',
-    version: '2.0.0',
-    authentication: 'Bearer token (WEBHOOK_SECRET)',
-    payload: {
-      agent_code: 'string (required)',
-      user_email: 'string (required)',
-      plan_type: 'string (required)',
-      reference: 'string (required, idempotency key)',
-    },
-    notes: [
-      'Do not send monetary amounts from LCS',
-      'Commission is computed inside Affiliate System from plan + affiliate level',
-      'Rewards are credited to availableBalance immediately for one-time payout logic',
-    ],
+    status: 'operational',
   })
 }
