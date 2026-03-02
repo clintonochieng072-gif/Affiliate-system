@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
 
     await ensureDefaultCommissionMatrix(prisma)
 
-    const affiliate = await prisma.affiliate.findUnique({
+    // First try to find the affiliate
+    let affiliate = await prisma.affiliate.findUnique({
       where: { email: session.user.email },
       include: {
         links: {
@@ -51,19 +52,49 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // If affiliate doesn't exist, create it (defensive upsert)
+    // This ensures SaaS auto-provisioning even if signIn callback failed
     if (!affiliate) {
-      console.error('⚠️ Affiliate record missing for authenticated user:', {
+      console.warn('⚠️ Affiliate missing - auto-provisioning on dashboard access:', {
         email: signedInEmail,
         timestamp: new Date().toISOString(),
-        message: 'User is authenticated but has no affiliate record. This indicates the signIn callback failed to create the affiliate record.',
       })
-      return NextResponse.json(
-        { 
-          error: 'Affiliate account not initialized',
-          details: 'Your account exists but the affiliate record was not created during login. Please sign out and sign in again.',
-        },
-        { status: 404 }
-      )
+
+      try {
+        affiliate = await prisma.affiliate.create({
+          data: {
+            email: session.user.email,
+            name: signedInName || session.user.email,
+            role: 'AFFILIATE',
+          },
+          include: {
+            links: true,
+            referrals: true,
+            withdrawals: true,
+            notifications: true,
+          },
+        })
+
+        console.log('✅ Affiliate auto-provisioned on dashboard access:', {
+          email: affiliate.email,
+          name: affiliate.name,
+        })
+      } catch (createError) {
+        const errMsg = createError instanceof Error ? createError.message : String(createError)
+        console.error('❌ Failed to auto-provision affiliate:', {
+          email: signedInEmail,
+          error: errMsg,
+        })
+        // Fall back to graceful error that suggests retry
+        // This is the only time we return an error on dashboard route
+        return NextResponse.json(
+          {
+            error: 'Affiliate initialization failed',
+            details: 'Unable to initialize your affiliate account. Please try refreshing or signing in again.',
+          },
+          { status: 500 }
+        )
+      }
     }
 
     const currentLevel = affiliate.level
