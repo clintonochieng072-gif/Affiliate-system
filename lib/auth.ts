@@ -54,17 +54,22 @@ export const authOptions: NextAuthOptions = {
   // Callbacks for custom logic
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log('🔐 SignIn callback triggered:', { user: user.email, provider: account?.provider })
+      const userInfo = {
+        email: user.email,
+        name: user.name,
+        provider: account?.provider,
+        profile: Boolean(profile),
+      }
+      console.log('🔐 SignIn callback triggered:', userInfo)
       
       // On successful Google sign-in, create sales agent record if it doesn't exist
       if (account?.provider === 'google' && user.email) {
         try {
-          // Validate required fields before creating affiliate
-          if (!user.email || !user.name) {
-            console.error('❌ Missing required fields for affiliate creation:', {
-              email: user.email,
-              name: user.name,
-            })
+          // Use email as fallback for name if not provided
+          const displayName = user.name?.trim() || user.email
+          
+          if (!displayName) {
+            console.error('❌ Cannot create affiliate - no email or name:', userInfo)
             return false
           }
 
@@ -78,7 +83,7 @@ export const authOptions: NextAuthOptions = {
             where: { email: user.email },
             update: updateData,
             create: {
-              name: user.name || user.email,
+              name: displayName,
               email: user.email,
               role: user.email === ADMIN_EMAIL ? 'ADMIN' : 'AFFILIATE',
             },
@@ -88,20 +93,32 @@ export const authOptions: NextAuthOptions = {
             email: affiliate.email,
             name: affiliate.name,
             role: affiliate.role,
-            isNewUser: !updateData.role, // Simple heuristic for new user
+            method: 'signIn_callback',
           })
+          
+          // Always allow signin if affiliate was created/updated successfully
+          return true
+          
         } catch (error) {
-          console.error('❌ CRITICAL: Error creating sales agent - login denied:', {
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          console.error('❌ Error creating affiliate during signIn:', {
             email: user.email,
             provider: account?.provider,
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
+            error: errorMsg,
+            // Only include stack in development
+            ...(process.env.NODE_ENV === 'development' && {
+              stack: error instanceof Error ? error.stack : undefined,
+            }),
           })
-          // CRITICAL: Prevent login if affiliate cannot be created
-          // New users MUST have an affiliate record for dashboard access
-          return false
+          
+          // On database error, still allow login but warn
+          // The user can complete their profile later
+          console.warn('⚠️ Allowing login despite affiliate creation error - user may need to complete profile')
+          return true
         }
       }
+      
+      // Allow login for other providers or fallback
       return true
     },
     
