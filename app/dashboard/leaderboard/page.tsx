@@ -6,17 +6,7 @@ import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
-
-const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  const payload = await response.json()
-
-  if (!response.ok || payload?.error) {
-    throw new Error(payload?.error || 'Request failed')
-  }
-
-  return payload
-}
+import { dashboardFetcher } from '@/lib/dashboard-fetcher'
 
 export default function LeaderboardPage() {
   const { data: session, status } = useSession()
@@ -30,7 +20,7 @@ export default function LeaderboardPage() {
   }, [status, router])
 
   const endpoint = showFull ? '/api/leaderboard?full=true' : '/api/leaderboard'
-  const { data, error, isLoading } = useSWR(session ? endpoint : null, fetcher, {
+  const { data, error, isLoading } = useSWR(session ? endpoint : null, dashboardFetcher, {
     refreshInterval: 15000,
   })
 

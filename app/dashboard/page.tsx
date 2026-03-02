@@ -7,18 +7,8 @@ import useSWR from 'swr'
 import Link from 'next/link'
 import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
+import { dashboardFetcher } from '@/lib/dashboard-fetcher'
 import { BadgeCheck, TrendingUp, Copy, Check, ExternalLink } from 'lucide-react'
-
-const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  const payload = await response.json()
-
-  if (!response.ok || payload?.error) {
-    throw new Error(payload?.error || 'Request failed')
-  }
-
-  return payload
-}
 
 export default function DashboardOverviewPage() {
   const { data: session, status } = useSession()
@@ -30,7 +20,7 @@ export default function DashboardOverviewPage() {
     }
   }, [status, router])
 
-  const { data, error, isLoading } = useSWR(session ? '/api/dashboard' : null, fetcher, {
+  const { data, error, isLoading } = useSWR(session ? '/api/dashboard' : null, dashboardFetcher, {
     refreshInterval: 15000,
   })
 
@@ -53,7 +43,7 @@ export default function DashboardOverviewPage() {
   const salesLinks = Array.isArray(data?.salesTrackingLinks) ? data.salesTrackingLinks : []
   const firstLink = salesLinks.length > 0 ? salesLinks[0] : null
   const referralUrl = firstLink
-    ? `https://leads.clintonstack.com?ref=${firstLink.agentCode}`
+    ? `https://affiliate.clintonstack.com/s/${firstLink.agentCode}`
     : null
 
   const [copiedLink, setCopiedLink] = useState(false)
@@ -122,6 +112,26 @@ export default function DashboardOverviewPage() {
           </p>
         </section>
 
+        {/* WhatsApp Sales Group Banner */}
+        <section className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-500/50 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h2 className="text-white font-semibold flex items-center gap-2">
+              💰 <span>Want More Sales?</span>
+            </h2>
+            <p className="text-slate-300 text-sm">
+              Join our Sales WhatsApp Group for winning strategies, live updates, and exclusive sales tips.
+            </p>
+          </div>
+          <a
+            href="https://chat.whatsapp.com/LrRoGo2MTa1Fe9UDhsJTtz?mode=gi_t"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2.5 rounded-lg font-semibold text-sm transition-all shrink-0 bg-green-600 hover:bg-green-500 text-white whitespace-nowrap"
+          >
+            Join Sales WhatsApp Group
+          </a>
+        </section>
+
         {/* Your Sales Link */}
         {referralUrl ? (
           <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
@@ -141,9 +151,10 @@ export default function DashboardOverviewPage() {
               </button>
             </div>
             <p className="text-xs text-slate-400 mt-2">
-              Share this link with clients. Visit{' '}
+              Share this sales link with potential clients. When they subscribe via your link, you earn commission. 
+              Visit{' '}
               <Link href="/dashboard/products" className="text-blue-300 hover:text-blue-200 underline">Products to Promote</Link>{' '}
-              for product details and more links.
+              for product details and additional sales links.
             </p>
           </section>
         ) : (

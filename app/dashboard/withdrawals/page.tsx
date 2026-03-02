@@ -6,17 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
-
-const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  const payload = await response.json()
-
-  if (!response.ok || payload?.error) {
-    throw new Error(payload?.error || 'Request failed')
-  }
-
-  return payload
-}
+import { dashboardFetcher } from '@/lib/dashboard-fetcher'
 
 const MIN_WITHDRAWAL_AMOUNT = 600
 
@@ -35,7 +25,7 @@ export default function WithdrawalsPage() {
     }
   }, [status, router])
 
-  const { data, error, isLoading, mutate } = useSWR(session ? '/api/dashboard' : null, fetcher, {
+  const { data, error, isLoading, mutate } = useSWR(session ? '/api/dashboard' : null, dashboardFetcher, {
     refreshInterval: 10000,
   })
 

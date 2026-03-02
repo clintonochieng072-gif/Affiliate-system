@@ -5,17 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 import DashboardNav from '@/components/DashboardNav'
-
-const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  const payload = await response.json()
-
-  if (!response.ok || payload?.error) {
-    throw new Error(payload?.error || 'Request failed')
-  }
-
-  return payload
-}
+import { dashboardFetcher } from '@/lib/dashboard-fetcher'
 
 export default function ProfileSettingsPage() {
   const { data: session, status } = useSession()
@@ -32,7 +22,7 @@ export default function ProfileSettingsPage() {
     }
   }, [status, router])
 
-  const { data, error, isLoading, mutate } = useSWR(session ? '/api/profile' : null, fetcher)
+  const { data, error, isLoading, mutate } = useSWR(session ? '/api/profile' : null, dashboardFetcher)
 
   useEffect(() => {
     if (data?.profile) {

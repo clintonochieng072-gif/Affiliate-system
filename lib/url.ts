@@ -33,16 +33,19 @@ export function getProductBaseUrl(): string {
 }
 
 /**
- * Generate the referral link agents share with potential clients.
- * Points directly to the target product with ?ref=CODE.
+ * Generate the sales link that agents share with clients.
+ * Format: https://affiliate.clintonstack.com/s/{code}
+ * Redirects to the target Lead Capture SaaS product with ?ref tracking param.
  */
 export function getSalesTrackingUrl(code: string, _request?: Request): string {
-  const productUrl = getProductBaseUrl()
-  const url = new URL(productUrl)
-  url.searchParams.set('ref', code)
-  return url.toString()
+  const salesDomain = process.env.NEXT_PUBLIC_SITE_URL || 'https://affiliate.clintonstack.com'
+  return `${salesDomain}/s/${code}`
 }
 
+/**
+ * Legacy alias for backwards compatibility
+ * @deprecated Use getSalesTrackingUrl instead
+ */
 export const getReferralUrl = getSalesTrackingUrl
 
 /**
@@ -74,22 +77,27 @@ export function isProduction(): boolean {
  */
 export function useBaseUrl(): string {
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_SITE_URL || 'https://sales.clintonstack.com'
+    return process.env.NEXT_PUBLIC_SITE_URL || 'https://affiliate.clintonstack.com'
   }
   return getBaseUrl()
 }
 
 /**
- * Client-side function to build a referral URL
- * Use this in React components to display referral links
+ * Client-side function to build a sales URL
+ * Use this in React components to display sales links
  * 
- * @param code - The affiliate referral code
- * @returns Full referral URL
+ * @param code - The sales tracking code
+ * @returns Full sales URL in format https://affiliate.clintonstack.com/s/{code}
  */
 export function buildReferralUrl(code: string): string {
   return getSalesTrackingUrl(code)
 }
 
+/**
+ * Build a sales tracking URL for sharing with clients
+ * @param code - The unique sales tracking code
+ * @returns Full sales URL
+ */
 export function buildSalesTrackingUrl(code: string): string {
   return getSalesTrackingUrl(code)
 }

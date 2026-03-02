@@ -6,17 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
-
-const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  const payload = await response.json()
-
-  if (!response.ok || payload?.error) {
-    throw new Error(payload?.error || 'Request failed')
-  }
-
-  return payload
-}
+import { dashboardFetcher } from '@/lib/dashboard-fetcher'
 
 const PAGE_SIZE = 20
 
@@ -31,7 +21,7 @@ export default function MyClientsPage() {
     }
   }, [status, router])
 
-  const { data, error, isLoading } = useSWR(session ? '/api/referrals' : null, fetcher, {
+  const { data, error, isLoading } = useSWR(session ? '/api/referrals' : null, dashboardFetcher, {
     refreshInterval: 15000,
   })
 
@@ -62,7 +52,7 @@ export default function MyClientsPage() {
       <main className="lg:ml-64 p-4 sm:p-6 lg:p-8 space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-white mb-1">My Clients</h1>
-          <p className="text-slate-400 text-sm">Track each client and the commission earned.</p>
+          <p className="text-slate-400 text-sm">Track each client and the commission earned from their subscription.</p>
         </div>
 
         <div className="hidden md:block bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">

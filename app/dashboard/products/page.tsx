@@ -6,18 +6,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
+import { dashboardFetcher } from '@/lib/dashboard-fetcher'
 import { Copy, Check, ExternalLink, ShoppingBag } from 'lucide-react'
-
-const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  const payload = await response.json()
-
-  if (!response.ok || payload?.error) {
-    throw new Error(payload?.error || 'Request failed')
-  }
-
-  return payload
-}
 
 export default function ProductsToPromotePage() {
   const { data: session, status } = useSession()
@@ -34,13 +24,13 @@ export default function ProductsToPromotePage() {
   // Fetch products
   const { data: productsData, error: productsError, isLoading: productsLoading } = useSWR(
     session ? '/api/products' : null,
-    fetcher,
+    dashboardFetcher,
   )
 
   // Fetch dashboard to get existing links and commission info
   const { data: dashboardData, error: dashboardError, isLoading: dashboardLoading, mutate: mutateDashboard } = useSWR(
     session ? '/api/dashboard' : null,
-    fetcher,
+    dashboardFetcher,
     { refreshInterval: 30000 },
   )
 
@@ -90,7 +80,7 @@ export default function ProductsToPromotePage() {
   }, [mutateDashboard])
 
   const buildTrackingUrl = (code: string) => {
-    return `https://leads.clintonstack.com?ref=${code}`
+    return `https://affiliate.clintonstack.com/s/${code}`
   }
 
   const copyToClipboard = useCallback(async (text: string, id: string) => {

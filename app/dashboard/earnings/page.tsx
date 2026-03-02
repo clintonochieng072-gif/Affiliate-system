@@ -6,17 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import DashboardNav from '@/components/DashboardNav'
 import { formatCurrency } from '@/lib/utils'
-
-const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  const payload = await response.json()
-
-  if (!response.ok || payload?.error) {
-    throw new Error(payload?.error || 'Request failed')
-  }
-
-  return payload
-}
+import { dashboardFetcher } from '@/lib/dashboard-fetcher'
 
 const PAGE_SIZE = 15
 
@@ -31,7 +21,7 @@ export default function EarningsPage() {
     }
   }, [status, router])
 
-  const { data, error, isLoading } = useSWR(session ? '/api/dashboard' : null, fetcher, {
+  const { data, error, isLoading } = useSWR(session ? '/api/dashboard' : null, dashboardFetcher, {
     refreshInterval: 15000,
   })
 

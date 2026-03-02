@@ -333,8 +333,52 @@ export async function GET(request: NextRequest) {
       )
 
       const affiliate = affiliateRows[0]
+      
+      // If affiliate missing in error path, create it now
       if (!affiliate) {
-        return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
+        console.warn('⚠️ [Dashboard Fallback] Affiliate missing - auto-provisioning now:', {
+          email: signedInEmail,
+          timestamp: new Date().toISOString(),
+        })
+        
+        try {
+          const newAffiliate = await prisma.affiliate.create({
+            data: {
+              email: signedInEmail,
+              name: signedInName || signedInEmail,
+              role: 'AFFILIATE',
+            },
+          })
+          
+          console.log('✅ Affiliate auto-provisioned in error handler:', {
+            email: newAffiliate.email,
+            name: newAffiliate.name,
+          })
+          
+          // Redirect to dashboard to reload with the new affiliate
+          return NextResponse.json(
+            {
+              success: true,
+              message: 'Sales record created. Please refresh your dashboard.',
+              redirectTo: '/dashboard',
+            },
+            { status: 201 }
+          )
+        } catch (createErr) {
+          const errMsg = createErr instanceof Error ? createErr.message : String(createErr)
+          console.error('❌ Failed to create affiliate in fallback:', {
+            email: signedInEmail,
+            error: errMsg,
+          })
+          
+          return NextResponse.json(
+            {
+              error: 'Unable to initialize sales record',
+              details: 'Please refresh and try again.',
+            },
+            { status: 500 }
+          )
+        }
       }
 
       const currentLevel = ['LEVEL_1', 'LEVEL_2', 'LEVEL_3', 'LEVEL_4'].includes(String(affiliate.level))
