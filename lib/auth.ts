@@ -59,13 +59,22 @@ export const authOptions: NextAuthOptions = {
       // On successful Google sign-in, create sales agent record if it doesn't exist
       if (account?.provider === 'google' && user.email) {
         try {
+          // Validate required fields before creating affiliate
+          if (!user.email || !user.name) {
+            console.error('❌ Missing required fields for affiliate creation:', {
+              email: user.email,
+              name: user.name,
+            })
+            return false
+          }
+
           // Only set role on update; never overwrite user-entered name
           const updateData: Record<string, unknown> = {}
           if (user.email === ADMIN_EMAIL) {
             updateData.role = 'ADMIN'
           }
 
-          await prisma.affiliate.upsert({
+          const affiliate = await prisma.affiliate.upsert({
             where: { email: user.email },
             update: updateData,
             create: {
@@ -74,8 +83,23 @@ export const authOptions: NextAuthOptions = {
               role: user.email === ADMIN_EMAIL ? 'ADMIN' : 'AFFILIATE',
             },
           })
+
+          console.log('✅ Affiliate record ensured:', {
+            email: affiliate.email,
+            name: affiliate.name,
+            role: affiliate.role,
+            isNewUser: !updateData.role, // Simple heuristic for new user
+          })
         } catch (error) {
-          console.error('❌ Error creating sales agent:', error)
+          console.error('❌ CRITICAL: Error creating sales agent - login denied:', {
+            email: user.email,
+            provider: account?.provider,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          })
+          // CRITICAL: Prevent login if affiliate cannot be created
+          // New users MUST have an affiliate record for dashboard access
+          return false
         }
       }
       return true

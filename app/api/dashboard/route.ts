@@ -52,7 +52,18 @@ export async function GET(request: NextRequest) {
     })
 
     if (!affiliate) {
-      return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
+      console.error('⚠️ Affiliate record missing for authenticated user:', {
+        email: signedInEmail,
+        timestamp: new Date().toISOString(),
+        message: 'User is authenticated but has no affiliate record. This indicates the signIn callback failed to create the affiliate record.',
+      })
+      return NextResponse.json(
+        { 
+          error: 'Affiliate account not initialized',
+          details: 'Your account exists but the affiliate record was not created during login. Please sign out and sign in again.',
+        },
+        { status: 404 }
+      )
     }
 
     const currentLevel = affiliate.level
@@ -244,7 +255,12 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Dashboard API error:', error)
+    console.error('❌ Dashboard API critical error:', {
+      email: signedInEmail,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    })
 
     try {
       if (!signedInEmail) {
