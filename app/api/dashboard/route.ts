@@ -21,58 +21,82 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session || !session.user?.email) {
+      console.warn('⚠️ Dashboard API: No session or email found')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     signedInEmail = session.user.email
     signedInName = session.user.name || 'Sales Partner'
+    
+    // Validate email format
+    if (!signedInEmail.includes('@')) {
+      console.error('❌ Invalid email format:', signedInEmail)
+      return NextResponse.json({ error: 'Invalid session email' }, { status: 401 })
+    }
 
-    await ensureDefaultCommissionMatrix(prisma)
+    console.log('📝 Dashboard API request started:', { email: signedInEmail, name: signedInName })
+
+    // Ensure commission rules exist
+    try {
+      await ensureDefaultCommissionMatrix(prisma)
+    } catch (matrixErr) {
+      console.warn('⚠️ Commission matrix ensure failed (non-blocking):', matrixErr instanceof Error ? matrixErr.message : String(matrixErr))
+    }
 
     // Use upsert to guarantee affiliate exists
     // Creates if missing, finds if exists - handles race conditions
-    let affiliate = await prisma.affiliate.upsert({
-      where: { email: session.user.email },
-      update: {}, // No updates needed
-      create: {
-        email: session.user.email,
-        name: signedInName || session.user.email,
-        role: 'AFFILIATE',
-      },
-      include: {
-        links: {
-          orderBy: { createdAt: 'desc' },
+    let affiliate
+    try {
+      affiliate = await prisma.affiliate.upsert({
+        where: { email: session.user.email },
+        update: {}, // No updates needed
+        create: {
+          email: session.user.email,
+          name: signedInName || session.user.email,
+          role: 'AFFILIATE',
         },
-        referrals: {
-          orderBy: { createdAt: 'desc' },
-          take: 200,
+        include: {
+          links: {
+            orderBy: { createdAt: 'desc' },
+          },
+          referrals: {
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+          },
+          withdrawals: {
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+          },
+          notifications: {
+            where: { roleTarget: 'AFFILIATE' },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          },
         },
-        withdrawals: {
-          orderBy: { createdAt: 'desc' },
-          take: 50,
-        },
-        notifications: {
-          where: { roleTarget: 'AFFILIATE' },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
-      },
-    })
-
-    if (!affiliate) {
-      console.error('❌ Affiliate upsert returned null for email:', signedInEmail)
-      return NextResponse.json(
-        {
-          error: 'Failed to initialize sales record',
-          details: 'Database error. Please refresh and try again.',
-        },
-        { status: 500 }
-      )
+      })
+      
+      console.log('✅ Affiliate upserted:', {
+        email: affiliate.email,
+        id: affiliate.id,
+        isNew: !affiliate.phone,
+      })
+    } catch (upsertErr) {
+      const errMsg = upsertErr instanceof Error ? upsertErr.message : String(upsertErr)
+      console.error('❌ Affiliate upsert failed:', {
+        email: signedInEmail,
+        error: errMsg,
+      })
+      throw new Error(`Affiliate upsert failed: ${errMsg}`)
     }
 
-    console.log('✅ Dashboard affiliate ensured:', {
+    if (!affiliate) {
+      throw new Error('Affiliate upsert returned null')
+    }
+
+    console.log('✅ Dashboard API loaded with upsert:', {
       email: affiliate.email,
-      isNew: !affiliate.phone, // Heuristic: new users unlikely to have phone on first load
+      affiliateId: affiliate.id,
+      hasLinks: affiliate.links?.length ?? 0,
     })
 
     const currentLevel = affiliate.level
@@ -264,12 +288,19 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : ''
+    
     console.error('❌ Dashboard API error:', {
       email: signedInEmail,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+      error: errorMsg,
       timestamp: new Date().toISOString(),
     })
+    
+    // Log full stack in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Stack trace:', errorStack)
+    }
 
     // If not authenticated, return 401
     if (!signedInEmail) {
