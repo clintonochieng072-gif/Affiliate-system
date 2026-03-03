@@ -25,9 +25,9 @@ async function testBalanceLogic() {
       return
     }
 
-    const totalEarned = Number(affiliate.totalEarned)
-    const pendingBalance = Number(affiliate.pendingBalance)
-    const availableBalance = Number(affiliate.availableBalance)
+    const totalEarned = Number(affiliate.totalEarned ?? 0)
+    const pendingBalance = Number(affiliate.pendingBalance ?? 0)
+    const availableBalance = Number(affiliate.availableBalance ?? 0)
 
     console.log(`👤 Affiliate: ${affiliate.name} (${affiliate.email})`)
     console.log(`   Level: ${affiliate.level}`)

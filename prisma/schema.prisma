@@ -113,7 +113,7 @@ model Referral {
   planId             String
   planType           String
   reference          String         @unique
-  clientName         String
+  clientName         String?
   userEmail          String
   referralDate       DateTime       @default(now())
   promotionAppliedAt DateTime?      @db.Timestamptz(6)

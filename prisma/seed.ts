@@ -47,6 +47,7 @@ async function upsertPlan(planType: string, name: string, monthlyPrice: number) 
       planType,
       name,
       isActive: true,
+      monthlyPrice: monthlyPrice,
     },
   })
 }

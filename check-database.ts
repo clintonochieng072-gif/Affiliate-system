@@ -42,9 +42,9 @@ async function checkDatabase() {
           console.log('')
         }
 
-        const totalEarnings = parseFloat(affiliate.totalEarned.toString())
-        const pendingBalance = parseFloat(affiliate.pendingBalance.toString())
-        const availableBalance = parseFloat(affiliate.availableBalance.toString())
+        const totalEarnings = parseFloat((affiliate.totalEarned ?? 0).toString())
+        const pendingBalance = parseFloat((affiliate.pendingBalance ?? 0).toString())
+        const availableBalance = parseFloat((affiliate.availableBalance ?? 0).toString())
         
         console.log(`   📈 Total Earnings: ${totalEarnings} KES`)
         console.log(`   ⏳ Pending Balance: ${pendingBalance} KES`)

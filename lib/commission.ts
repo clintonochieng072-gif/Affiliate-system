@@ -142,6 +142,7 @@ export async function ensureDefaultCommissionMatrix(prisma: PrismaClient) {
         planType: 'Individual',
         name: 'Individual Plan',
         isActive: true,
+        monthlyPrice: 3700,
       },
     }),
     prisma.plan.upsert({
@@ -151,6 +152,7 @@ export async function ensureDefaultCommissionMatrix(prisma: PrismaClient) {
         planType: 'Professional',
         name: 'Professional Plan',
         isActive: true,
+        monthlyPrice: 7600,
       },
     }),
   ])

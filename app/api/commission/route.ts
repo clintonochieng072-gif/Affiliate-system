@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
           affiliateId: affiliateLink.affiliate.id,
           planId: commissionLookup.plan!.id,
           planType: commissionLookup.plan!.planType,
-          clientName: client_name || undefined,
+          clientName: client_name,
           userEmail: user_email,
           commissionAmount: rewardAmount,
           reference,
