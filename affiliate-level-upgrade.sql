@@ -5,8 +5,8 @@ BEGIN;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'UserRole') THEN
-    CREATE TYPE "UserRole" AS ENUM ('AFFILIATE', 'ADMIN');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'Role') THEN
+    CREATE TYPE "Role" AS ENUM ('AFFILIATE', 'ADMIN');
   END IF;
 END $$;
 
@@ -15,7 +15,7 @@ ALTER TYPE "AffiliateLevel" ADD VALUE IF NOT EXISTS 'LEVEL_4';
 
 ALTER TABLE "affiliates"
   ADD COLUMN IF NOT EXISTS "phone" text,
-  ADD COLUMN IF NOT EXISTS "role" "UserRole" NOT NULL DEFAULT 'AFFILIATE',
+  ADD COLUMN IF NOT EXISTS "role" "Role" NOT NULL DEFAULT 'AFFILIATE',
   ADD COLUMN IF NOT EXISTS "totalReferralsIndividual" integer NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS "totalReferralsProfessional" integer NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS "isFrozen" boolean NOT NULL DEFAULT false,
@@ -38,7 +38,7 @@ ALTER TABLE "withdrawals"
 CREATE TABLE IF NOT EXISTS "notifications" (
   "id" text PRIMARY KEY,
   "affiliateId" text,
-  "roleTarget" "UserRole" NOT NULL,
+  "roleTarget" "Role" NOT NULL,
   "type" text NOT NULL,
   "title" text NOT NULL,
   "message" text NOT NULL,

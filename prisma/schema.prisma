@@ -17,9 +17,10 @@ enum AffiliateLevel {
   LEVEL_4
 }
 
-enum UserRole {
+enum Role {
   AFFILIATE
   ADMIN
+  // add other roles here if needed in future (USER, MANAGER, etc.)
 }
 
 enum WithdrawalStatus {
@@ -35,7 +36,7 @@ model Affiliate {
   email     String   @unique
   name      String
   phone     String?
-  role      UserRole @default(AFFILIATE)
+  role      Role @default(AFFILIATE)
   level     AffiliateLevel @default(LEVEL_1)
   totalReferralsIndividual Int @default(0)
   totalReferralsProfessional Int @default(0)
@@ -58,6 +59,14 @@ model Affiliate {
 
   @@index([email])
   @@map("affiliates")
+}
+
+// Optional User table for generic users; mirrors affiliate minimal fields
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      Role     @default(AFFILIATE)
+  createdAt DateTime @default(now())
 }
 
 model Plan {
@@ -198,7 +207,7 @@ model Withdrawal {
 model Notification {
   id          String   @id @default(uuid())
   affiliateId String?
-  roleTarget  UserRole
+  roleTarget  Role
   type        String
   title       String
   message     String
