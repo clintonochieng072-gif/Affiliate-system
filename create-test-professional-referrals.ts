@@ -76,7 +76,7 @@ async function main() {
       }
 
       await tx.$executeRawUnsafe(
-        `insert into "referrals" ("id", "affiliateId", "planId", "planType", "clientName", "clientEmail", "commissionAmount", "reference", "status", "referralDate", "createdAt") values (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8::"ReferralStatus", now(), now())`,
+        `insert into "referrals" ("id", "affiliateId", "planId", "planType", "clientName", "userEmail", "commissionAmount", "reference", "status", "referralDate", "createdAt") values (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8::"ReferralStatus", now(), now())`,
         affiliate.id,
         commissionLookup.plan!.id,
         'Professional',
