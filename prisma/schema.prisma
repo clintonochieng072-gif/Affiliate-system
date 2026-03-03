@@ -15,6 +15,7 @@ model Affiliate {
   level                      AffiliateLevel            @default(LEVEL_1)
   pendingBalance             Decimal                   @default(0) @db.Decimal(12, 2)
   availableBalance           Decimal                   @default(0) @db.Decimal(12, 2)
+  totalWithdrawn             Decimal                   @default(0) @db.Decimal(12, 2)
   phone                      String?
   totalReferralsIndividual   Int                       @default(0)
   totalReferralsProfessional Int                       @default(0)
