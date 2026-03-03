@@ -148,8 +148,8 @@ export async function GET(request: NextRequest) {
       const commissionByLevel = allCommissionRules
         .filter(rule => rule.affiliateLevel === levelKey && rule.plan.isActive)
         .map(rule => ({
-          planType: rule.plan.planType,
-          rewardAmount: decimalToNumber(rule.rewardAmount),
+          planType: rule.plan.planType || 'Unknown',
+          rewardAmount: decimalToNumber(rule.rewardAmount ?? 0),
         }))
 
       if (commissionByLevel.length === 0) {
@@ -173,9 +173,9 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const availableSalesEarnings = decimalToNumber(affiliate.availableBalance)
-    const pendingSalesEarnings = decimalToNumber(affiliate.pendingBalance)
-    const totalSalesEarnings = decimalToNumber(affiliate.totalEarned)
+    const availableSalesEarnings = decimalToNumber(affiliate.availableBalance ?? 0)
+    const pendingSalesEarnings = decimalToNumber(affiliate.pendingBalance ?? 0)
+    const totalSalesEarnings = decimalToNumber(affiliate.totalEarned ?? 0)
 
     const totalReferrals = affiliate.totalReferralsIndividual + affiliate.totalReferralsProfessional
 
@@ -222,13 +222,13 @@ export async function GET(request: NextRequest) {
       leaderboardPreview: leaderboardPreview.map((partner, index) => ({
         rank: index + 1,
         id: partner.id,
-        name: partner.name,
-        email: partner.email,
-        displayName: String(partner.name || '').trim() || partner.email,
+        name: partner.name || 'Unknown',
+        email: partner.email || 'unknown@example.com',
+        displayName: String(partner.name || '').trim() || partner.email || 'Unknown',
         phone: String(partner.phone || '').trim() || 'Not provided',
         level: partner.level,
-        totalReferrals: partner.totalReferralsIndividual + partner.totalReferralsProfessional,
-        totalEarnings: decimalToNumber(partner.totalEarned),
+        totalReferrals: (partner.totalReferralsIndividual ?? 0) + (partner.totalReferralsProfessional ?? 0),
+        totalEarnings: decimalToNumber(partner.totalEarned ?? 0),
       })),
       salesTrackingLinks: affiliate.links.map(link => ({
         id: link.id,
@@ -239,21 +239,21 @@ export async function GET(request: NextRequest) {
       referralHistory: affiliate.referrals.map(referral => ({
         id: referral.id,
         clientName: referral.clientName || 'Unknown Client',
-        clientEmail: referral.userEmail,
-        planType: referral.planType,
-        commission: decimalToNumber(referral.commissionAmount),
-        status: referral.status,
-        reference: referral.reference,
-        date: referral.createdAt.toISOString(),
+        clientEmail: referral.userEmail || 'unknown@example.com',
+        planType: referral.planType || 'Unknown Plan',
+        commission: decimalToNumber(referral.commissionAmount ?? 0),
+        status: referral.status || 'pending',
+        reference: referral.reference || 'N/A',
+        date: referral.createdAt?.toISOString() || new Date().toISOString(),
       })),
       payoutHistory: affiliate.withdrawals.map(withdrawal => ({
         id: withdrawal.id,
-        amount: decimalToNumber(withdrawal.amount),
-        status: withdrawal.status,
-        mpesaNumber: withdrawal.mpesaNumber,
-        failureReason: withdrawal.failureReason,
-        providerReference: withdrawal.providerReference,
-        requestedDate: withdrawal.createdAt.toISOString(),
+        amount: decimalToNumber(withdrawal.amount ?? 0),
+        status: withdrawal.status || 'pending',
+        mpesaNumber: withdrawal.mpesaNumber || 'N/A',
+        failureReason: withdrawal.failureReason || null,
+        providerReference: withdrawal.providerReference || null,
+        requestedDate: withdrawal.createdAt?.toISOString() || new Date().toISOString(),
         completedDate: withdrawal.completedAt?.toISOString() || null,
       })),
       notifications: affiliate.notifications.map(item => ({
@@ -270,15 +270,15 @@ export async function GET(request: NextRequest) {
       pendingSalesEarnings,
       salesActivity: affiliate.referrals.map(referral => ({
         id: referral.id,
-        userEmail: referral.userEmail,
-        planType: referral.planType,
-        productSlug: referral.planType,
+        userEmail: referral.userEmail || 'unknown@example.com',
+        planType: referral.planType || 'Unknown Plan',
+        productSlug: referral.planType || 'Unknown',
         subscriptionValue: null,
-        salesEarnings: decimalToNumber(referral.commissionAmount),
-        paymentReference: referral.reference,
-        reference: referral.reference,
-        status: referral.status,
-        createdAt: referral.createdAt.toISOString(),
+        salesEarnings: decimalToNumber(referral.commissionAmount ?? 0),
+        paymentReference: referral.reference || 'N/A',
+        reference: referral.reference || 'N/A',
+        status: referral.status || 'pending',
+        createdAt: referral.createdAt?.toISOString() || new Date().toISOString(),
       })),
       salesAgent: {
         id: affiliate.id,

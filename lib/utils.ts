@@ -55,6 +55,8 @@ export function getClientIP(headers: Headers): string {
  * Convert Prisma Decimal to number for safe JSON serialization
  */
 export function decimalToNumber(decimal: any): number {
+  if (decimal === null || decimal === undefined) return 0;
   if (typeof decimal === 'number') return decimal;
-  return parseFloat(decimal.toString());
+  const parsed = parseFloat(decimal.toString());
+  return isNaN(parsed) ? 0 : parsed;
 }

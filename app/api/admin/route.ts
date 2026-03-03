@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     }, 0)
 
     const totalCommissionsPaid = referrals.reduce(
-      (sum, referral) => sum + decimalToNumber(referral.commissionAmount),
+      (sum, referral) => sum + decimalToNumber(referral.commissionAmount ?? 0),
       0
     )
 
@@ -147,9 +147,9 @@ export async function GET(request: NextRequest) {
           affiliate.totalReferralsIndividual + affiliate.totalReferralsProfessional,
         totalReferralsIndividual: affiliate.totalReferralsIndividual,
         totalReferralsProfessional: affiliate.totalReferralsProfessional,
-        totalEarnings: decimalToNumber(affiliate.totalEarned),
-        availableBalance: decimalToNumber(affiliate.availableBalance),
-        pendingBalance: decimalToNumber(affiliate.pendingBalance),
+        totalEarnings: decimalToNumber(affiliate.totalEarned ?? 0),
+        availableBalance: decimalToNumber(affiliate.availableBalance ?? 0),
+        pendingBalance: decimalToNumber(affiliate.pendingBalance ?? 0),
         registrationDate: affiliate.createdAt.toISOString(),
       })),
       recentReferrals: referrals.map(referral => ({
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
         clientName: referral.clientName || 'Unknown Client',
         clientEmail: referral.userEmail,
         planType: referral.planType,
-        commission: decimalToNumber(referral.commissionAmount),
+        commission: decimalToNumber(referral.commissionAmount ?? 0),
         status: referral.status,
         date: referral.createdAt.toISOString(),
       })),
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
         affiliateName: withdrawal.affiliate.name,
         affiliateEmail: withdrawal.affiliate.email,
         affiliatePhone: withdrawal.affiliate.phone,
-        amount: decimalToNumber(withdrawal.amount),
+        amount: decimalToNumber(withdrawal.amount ?? 0),
         status: withdrawal.status,
         requestedDate: withdrawal.createdAt.toISOString(),
         providerReference: withdrawal.providerReference,
@@ -176,23 +176,23 @@ export async function GET(request: NextRequest) {
       topPerformers: topPerformers.map((affiliate, index) => ({
         rank: index + 1,
         id: affiliate.id,
-        name: affiliate.name,
-        phone: affiliate.phone,
+        name: affiliate.name || 'Unknown',
+        phone: affiliate.phone || 'Not provided',
         level: affiliate.level,
         totalReferrals:
-          affiliate.totalReferralsIndividual + affiliate.totalReferralsProfessional,
-        totalEarnings: decimalToNumber(affiliate.totalEarned),
+          (affiliate.totalReferralsIndividual ?? 0) + (affiliate.totalReferralsProfessional ?? 0),
+        totalEarnings: decimalToNumber(affiliate.totalEarned ?? 0),
       })),
       level4EligibleAffiliates: level4Candidates.map(affiliate => ({
         id: affiliate.id,
-        name: affiliate.name,
-        email: affiliate.email,
-        phone: affiliate.phone,
+        name: affiliate.name || 'Unknown',
+        email: affiliate.email || 'unknown@example.com',
+        phone: affiliate.phone || 'Not provided',
         level: affiliate.level,
         eligibleSince: affiliate.level4EligibleAt?.toISOString() || null,
         totalReferrals:
-          affiliate.totalReferralsIndividual + affiliate.totalReferralsProfessional,
-        totalEarnings: decimalToNumber(affiliate.totalEarned),
+          (affiliate.totalReferralsIndividual ?? 0) + (affiliate.totalReferralsProfessional ?? 0),
+        totalEarnings: decimalToNumber(affiliate.totalEarned ?? 0),
       })),
     })
   } catch (error) {

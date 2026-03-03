@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'clintonstack4@gmail.com'
 
-export default async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
