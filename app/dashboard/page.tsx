@@ -101,7 +101,7 @@ export default function DashboardOverviewPage() {
     <div className="min-h-screen bg-slate-950">
       <DashboardNav />
 
-      <main className="lg:ml-64 p-4 sm:p-6 lg:p-8 space-y-5">
+      <main className="lg:ml-64 p-4 sm:p-6 lg:p-8 space-y-5 text-lg">
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
           <h1 className="text-2xl font-bold text-white mb-2">Overview</h1>
           <p className="text-blue-300 font-medium text-sm mb-2">Welcome {welcomeName}</p>

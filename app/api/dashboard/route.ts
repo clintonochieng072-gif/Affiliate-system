@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
         },
       }),
       prisma.affiliate.findMany({
-        where: { role: 'AFFILIATE' },
+        where: { role: 'AFFILIATE', totalEarned: { gt: 0 } },
         orderBy: [{ totalEarned: 'desc' }, { createdAt: 'asc' }],
         take: 10,
         select: {

@@ -1,6 +1,3 @@
-// Prisma schema for Neon PostgreSQL (Serverless)
-// Production-ready for Next.js App Router
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,73 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AffiliateLevel {
-  LEVEL_1
-  LEVEL_2
-  LEVEL_3
-  LEVEL_4
-}
-
-enum Role {
-  AFFILIATE
-  ADMIN
-  // add other roles here if needed in future (USER, MANAGER, etc.)
-}
-
-enum WithdrawalStatus {
-  pending
-  processing
-  completed
-  failed
-}
-
-// Affiliate model - stores affiliate user information
 model Affiliate {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  phone     String?
-  role      Role @default(AFFILIATE)
-  level     AffiliateLevel @default(LEVEL_1)
-  totalReferralsIndividual Int @default(0)
-  totalReferralsProfessional Int @default(0)
-  pendingBalance   Decimal  @default(0) @db.Decimal(12, 2)
-  availableBalance Decimal  @default(0) @db.Decimal(12, 2)
-  totalEarned      Decimal  @default(0) @db.Decimal(12, 2)
-  profileCompleted Boolean  @default(false)
-  isFrozen         Boolean  @default(false)
-  promotedAt       DateTime?
-  level4EligibleAt DateTime?
-  registrationDate DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  links     AffiliateLink[]
-  referrals Referral[]
-  payouts   Payout[]
-  withdrawals Withdrawal[]
-  notifications Notification[]
+  id                         String                    @id @default(uuid())
+  email                      String                    @unique
+  name                       String?
+  createdAt                  DateTime                  @default(now())
+  level                      AffiliateLevel            @default(LEVEL_1)
+  pendingBalance             Decimal                   @default(0) @db.Decimal(12, 2)
+  availableBalance           Decimal                   @default(0) @db.Decimal(12, 2)
+  phone                      String?
+  totalReferralsIndividual   Int                       @default(0)
+  totalReferralsProfessional Int                       @default(0)
+  totalEarnings              Decimal                   @default(0) @db.Decimal(12, 2)
+  role                       Role                      @default(AFFILIATE)
+  isFrozen                   Boolean                   @default(false)
+  level4Eligible             Boolean                   @default(false)
+  level4EligibleAt           DateTime?
+  registrationDate           DateTime                  @default(now())
+  updatedAt                  DateTime                  @default(now()) @updatedAt
+  promotedAt                 DateTime?                 @db.Timestamptz(6)
+  profileCompleted           Boolean                   @default(false)
+  totalEarned                Decimal?                  @default(0) @db.Decimal(12, 2)
+  links                      AffiliateLink[]
+  affiliate_notifications    affiliate_notifications[]
+  affiliate_promotions       affiliate_promotions[]
+  notifications              Notification[]
+  payouts                    Payout[]
+  referrals                  Referral[]
+  withdrawals                Withdrawal[]
 
   @@index([email])
+  @@index([level])
+  @@index([role])
+  @@index([email], map: "idx_affiliates_email")
   @@map("affiliates")
 }
 
-// Optional User table for generic users; mirrors affiliate minimal fields
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  role      Role     @default(AFFILIATE)
-  createdAt DateTime @default(now())
-}
-
 model Plan {
-  id          String   @id @default(uuid())
-  planType    String   @unique
-  name        String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-
+  id              String           @id @default(uuid())
+  planType        String           @unique
+  name            String
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  monthlyPrice    Decimal          @db.Decimal(10, 2)
   commissionRules CommissionRule[]
   referrals       Referral[]
 
@@ -91,7 +64,6 @@ model CommissionRule {
   planId         String
   rewardAmount   Decimal        @db.Decimal(10, 2)
   createdAt      DateTime       @default(now())
-
   plan           Plan           @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   @@unique([affiliateLevel, planId])
@@ -100,17 +72,14 @@ model CommissionRule {
   @@map("commission_rules")
 }
 
-// Product model - SaaS products available for promotion
 model Product {
-  id            String   @id @default(uuid())
-  slug          String   @unique
+  id            String          @id @default(uuid())
+  slug          String          @unique
   name          String
   description   String
   url           String
-  isHighlighted Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  
-  // Relations
+  isHighlighted Boolean         @default(false)
+  createdAt     DateTime        @default(now())
   links         AffiliateLink[]
 
   @@index([slug])
@@ -118,16 +87,13 @@ model Product {
   @@map("products")
 }
 
-// AffiliateLink model - unique referral links per affiliate per product
 model AffiliateLink {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   affiliateId  String
-  productId    String
   productSlug  String
-  referralCode String   @unique
-  createdAt    DateTime @default(now())
-  
-  // Relations
+  referralCode String    @unique
+  createdAt    DateTime  @default(now())
+  productId    String
   affiliate    Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
   product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -138,24 +104,21 @@ model AffiliateLink {
   @@map("affiliate_links")
 }
 
-// Referral model - tracks successful referrals and commissions
 model Referral {
-  id                String   @id @default(uuid())
-  affiliateId       String
-  planId            String
-  planType          String
-  clientName        String?
-  userEmail         String
-  commissionAmount  Decimal  @db.Decimal(10, 2)
-  reference         String   @unique
-  status            String   @default("active")
-  promotionAppliedAt DateTime?
-  referralDate      DateTime @default(now())
-  createdAt         DateTime @default(now())
-  
-  // Relations
-  affiliate         Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
-  plan              Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  id                 String         @id @default(uuid())
+  affiliateId        String
+  commissionAmount   Decimal        @db.Decimal(10, 2)
+  status             ReferralStatus @default(pending)
+  createdAt          DateTime       @default(now())
+  planId             String
+  planType           String
+  reference          String         @unique
+  clientName         String
+  userEmail          String
+  referralDate       DateTime       @default(now())
+  promotionAppliedAt DateTime?      @db.Timestamptz(6)
+  affiliate          Affiliate      @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  plan               Plan           @relation(fields: [planId], references: [id])
 
   @@index([affiliateId])
   @@index([planId])
@@ -163,18 +126,16 @@ model Referral {
   @@index([status])
   @@index([reference])
   @@index([createdAt])
+  @@index([userEmail], map: "referrals_clientEmail_idx")
   @@map("referrals")
 }
 
-// Payout model - tracks affiliate payouts
 model Payout {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   affiliateId String
-  amount      Decimal  @db.Decimal(10, 2)
-  status      String   @default("pending") // 'pending' or 'paid'
-  createdAt   DateTime @default(now())
-  
-  // Relations
+  amount      Decimal   @db.Decimal(10, 2)
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
   affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
 
   @@index([affiliateId])
@@ -182,21 +143,19 @@ model Payout {
   @@map("payouts")
 }
 
-// Withdrawal model - stateful withdrawal lifecycle with strict transitions
 model Withdrawal {
   id                String           @id @default(uuid())
   affiliateId       String
-  amount            Decimal          @db.Decimal(10, 2)
   mpesaNumber       String
   status            WithdrawalStatus @default(pending)
-  providerReference String?          @unique
   failureReason     String?
-  completedAt       DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
-  
-  // Relations
-  affiliate          Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  amount            Decimal          @db.Decimal(10, 2)
+  providerReference String?          @unique
+  completedDate     DateTime?
+  completedAt       DateTime?        @db.Timestamptz(6)
+  affiliate         Affiliate        @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
 
   @@index([affiliateId])
   @@index([status])
@@ -206,20 +165,69 @@ model Withdrawal {
 }
 
 model Notification {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   affiliateId String?
   roleTarget  Role
   type        String
   title       String
   message     String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  affiliate   Affiliate? @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  isRead      Boolean    @default(false)
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  affiliate   Affiliate? @relation(fields: [affiliateId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([affiliateId])
   @@index([roleTarget])
   @@index([isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+model affiliate_notifications {
+  id          String    @id
+  affiliateId String
+  title       String
+  message     String
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  affiliates  Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId])
+  @@index([createdAt])
+  @@index([isRead])
+}
+
+model affiliate_promotions {
+  id          String         @id
+  affiliateId String
+  fromLevel   AffiliateLevel
+  toLevel     AffiliateLevel
+  promotedAt  DateTime       @default(now())
+  affiliates  Affiliate      @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId])
+  @@index([promotedAt])
+}
+
+enum AffiliateLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+  LEVEL_4
+}
+
+enum Role {
+  AFFILIATE
+  ADMIN
+}
+
+enum WithdrawalStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum ReferralStatus {
+  active
+  pending
 }

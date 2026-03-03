@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       `select "id", "name", "email", "phone", "level", "totalReferralsIndividual", "totalReferralsProfessional", "${earningsColumn}" as "totalEarnings", "createdAt"
        from "affiliates"
        where lower("role"::text) = 'affiliate'
+         and "${earningsColumn}" > 0
        order by "${earningsColumn}" desc, "createdAt" asc
        limit ${take}`
     )
@@ -71,6 +72,7 @@ export async function GET(request: NextRequest) {
         `select "id", "name", "email", "phone", "level", "totalReferralsIndividual", "totalReferralsProfessional", "${earningsColumn}" as "totalEarnings", "createdAt"
          from "affiliates"
         where lower("role"::text) = 'affiliate'
+          and "${earningsColumn}" > 0
          order by "${earningsColumn}" desc, "createdAt" asc
          limit ${take}`
       )

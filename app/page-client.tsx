@@ -15,10 +15,11 @@ export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
-  // Redirect to dashboard if already logged in
+  // Redirect to appropriate dashboard based on role
   useEffect(() => {
-    if (session) {
-      router.push('/sales-dashboard')
+    if (session && session.user?.role) {
+      const destination = session.user.role === 'admin' ? '/admin' : '/sales-dashboard'
+      router.push(destination)
     }
   }, [session, router])
 
@@ -88,7 +89,7 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => signIn('google', { callbackUrl: '/sales-dashboard' })}
+              onClick={() => signIn('google')}
               className="group inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold px-8 py-4 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/50"
             >
               Join Sales Team
