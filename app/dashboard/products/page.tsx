@@ -144,6 +144,12 @@ export default function ProductsToPromotePage() {
           {currentCommission.hasData ? (
             <p className="text-slate-300 text-sm leading-6">
               You earn commission based on your current Sales Level:
+          {/* Demo product description for affiliates - collapsible read more */}
+          <div className="mt-4">
+            <details className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+              <summary className="text-sm text-blue-300 font-semibold cursor-pointer">Read More</summary>
+              <div className="mt-3 text-slate-300 text-sm leading-6 whitespace-pre-line">
+{`What Is the Lead Capture System? (For Affiliates)
               <br />• <span className="text-white font-medium">{formatCurrency(currentCommission.individual ?? 0)}</span> per Individual plan subscription (Ksh 3,700/month)
               <br />• <span className="text-white font-medium">{formatCurrency(currentCommission.professional ?? 0)}</span> per Professional plan subscription (Ksh 7,600/month)
             </p>
@@ -250,5 +256,8 @@ export default function ProductsToPromotePage() {
         )}
       </main>
     </div>
+              </div>
+            </details>
+          </div>
   )
 }

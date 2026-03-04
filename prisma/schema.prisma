@@ -10,6 +10,7 @@ datasource db {
 model Affiliate {
   id                         String                    @id @default(uuid())
   email                      String                    @unique
+  isDemoAccount              Boolean                   @default(false)
   name                       String?
   createdAt                  DateTime                  @default(now())
   level                      AffiliateLevel            @default(LEVEL_1)
