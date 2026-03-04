@@ -142,17 +142,129 @@ export default function ProductsToPromotePage() {
         <section className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 sm:p-5">
           <h2 className="text-blue-300 font-semibold mb-1">Your Commission</h2>
           {currentCommission.hasData ? (
-            <p className="text-slate-300 text-sm leading-6">
-              You earn commission based on your current Sales Level:
-          {/* Demo product description for affiliates - collapsible read more */}
-          <div className="mt-4">
-            <details className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-              <summary className="text-sm text-blue-300 font-semibold cursor-pointer">Read More</summary>
-              <div className="mt-3 text-slate-300 text-sm leading-6 whitespace-pre-line">
+            <div>
+              <p className="text-slate-300 text-sm leading-6">
+                You earn commission based on your current Sales Level:
+                <br />• <span className="text-white font-medium">{formatCurrency(currentCommission.individual ?? 0)}</span> per Individual plan subscription (Ksh 3,700/month)
+                <br />• <span className="text-white font-medium">{formatCurrency(currentCommission.professional ?? 0)}</span> per Professional plan subscription (Ksh 7,600/month)
+              </p>
+
+              {/* Demo product description for affiliates - collapsible read more */}
+              <div className="mt-4">
+                <details className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                  <summary className="text-sm text-blue-300 font-semibold cursor-pointer">Read More</summary>
+                  <div className="mt-3 text-slate-300 text-sm leading-6 whitespace-pre-line">
 {`What Is the Lead Capture System? (For Affiliates)
-              <br />• <span className="text-white font-medium">{formatCurrency(currentCommission.individual ?? 0)}</span> per Individual plan subscription (Ksh 3,700/month)
-              <br />• <span className="text-white font-medium">{formatCurrency(currentCommission.professional ?? 0)}</span> per Professional plan subscription (Ksh 7,600/month)
-            </p>
+
+Let me explain in a very simple way what this system actually does, so you understand what you’re promoting.
+
+The Lead Capture System helps business owners collect the name and phone number of potential customers before those customers enter their website.
+
+That’s it.
+
+It turns normal website visitors into real leads the business owner can follow up with.
+
+🔎 How It Works (Step by Step)
+Step 1: Business Owner Logs In
+
+The business owner creates an account and logs in.
+
+Step 2: They Set Their Target URL
+
+They paste their website link (for example, a car dealer pastes their car sales website link).
+
+That link becomes their target URL.
+
+Think of it as:
+
+“Where visitors should finally go.”
+
+Step 3: The System Generates a Smart Link
+
+After setting the target URL, the system gives them a Smart Link.
+
+This Smart Link is what they will share online.
+
+Step 4: They Share the Smart Link
+
+Instead of sharing their normal website link, they share the Smart Link.
+
+Example:
+
+A car dealer posts on social media:
+
+“Check out our latest car collection here 👇”
+
+Then instead of pasting:
+www.mycardealer.com
+
+They paste:
+👉 Their Smart Link
+
+Step 5: What Happens When a Buyer Clicks?
+
+When a potential buyer (someone browsing social media) clicks the Smart Link:
+
+They are first taken to a simple page.
+
+That page asks for:
+
+Name
+
+Phone number
+
+The buyer enters their details.
+
+After submitting…
+
+They are automatically redirected to the real website (the Target URL).
+
+So the buyer still sees the cars.
+
+But now the business owner also has:
+
+Their name
+
+Their phone number
+
+Saved in their dashboard.
+
+🎯 What This Means for Businesses
+
+Instead of getting anonymous visitors, the business owner now gets:
+
+Real names
+
+Real phone numbers
+
+Real potential customers
+
+Even if the customer doesn’t buy immediately, the business owner can:
+
+Call them
+
+Send them WhatsApp messages
+
+Follow up later
+
+That’s the power of the system.
+
+💡 Simple Way to Explain It to Clients
+
+You can tell clients this:
+
+“Our system helps you collect the name and phone number of every serious visitor before they enter your website, so you never lose potential customers again.”
+
+That’s it.
+
+📌 In One Sentence
+
+The platform connects a business owner’s website to a system that captures visitor details before sending them to the website.
+`}
+                  </div>
+                </details>
+              </div>
+            </div>
           ) : (
             <p className="text-sm text-orange-300">
               You earn commission based on your current Sales Level. Commission rates will appear once configured by the administrator.
@@ -256,8 +368,6 @@ export default function ProductsToPromotePage() {
         )}
       </main>
     </div>
-              </div>
-            </details>
-          </div>
   )
 }
+
