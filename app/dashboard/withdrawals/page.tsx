@@ -14,7 +14,6 @@ export default function WithdrawalsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [amountInput, setAmountInput] = useState('')
-  const [mpesaNumber, setMpesaNumber] = useState('')
   const [requesting, setRequesting] = useState(false)
   const [optimisticDelta, setOptimisticDelta] = useState(0)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -49,20 +48,14 @@ export default function WithdrawalsPage() {
       return
     }
 
-    const cleanedNumber = mpesaNumber.replace(/\D/g, '')
-    if (!/^\d{9,15}$/.test(cleanedNumber)) {
-      setMessage({ type: 'error', text: 'Enter a valid mobile money number with 9-15 digits.' })
-      return
-    }
-
     setRequesting(true)
     setOptimisticDelta(prev => prev + amount)
 
     try {
-      const response = await fetch('/api/withdrawal', {
+      const response = await fetch('/api/withdraw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, mpesaNumber }),
+        body: JSON.stringify({ amount }),
       })
 
       const payload = await response.json()
@@ -72,7 +65,6 @@ export default function WithdrawalsPage() {
 
       setMessage({ type: 'success', text: 'Withdrawal submitted. Status will update from pending to processing and then completed or failed.' })
       setAmountInput('')
-      setMpesaNumber('')
       setOptimisticDelta(0)
       await mutate()
     } catch (requestError: any) {
@@ -109,11 +101,11 @@ export default function WithdrawalsPage() {
         </div>
 
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 space-y-4">
-          <div className="text-sm text-slate-300">Minimum withdrawal: KSh 600</div>
+          <div className="text-sm text-slate-300">Minimum withdrawal: KSh {MIN_WITHDRAWAL_AMOUNT}</div>
           <div className="text-2xl font-bold text-white">Available Balance: {formatCurrency(availableBalance)}</div>
 
           <form onSubmit={requestWithdrawal} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm text-slate-300 mb-1">Amount</label>
               <input
                 type="number"
@@ -124,17 +116,6 @@ export default function WithdrawalsPage() {
                 onChange={(e) => setAmountInput(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
                 placeholder="Enter amount"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">M-PESA Number</label>
-              <input
-                value={mpesaNumber}
-                onChange={(e) => setMpesaNumber(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
-                placeholder="07XXXXXXXX"
                 required
               />
             </div>

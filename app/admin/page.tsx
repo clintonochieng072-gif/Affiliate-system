@@ -153,7 +153,12 @@ export default function AdminPage() {
   }
 
   if (error || !data) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-red-400">Failed to load admin dashboard</div>
+    const errMsg = (error as Error)?.message || (data && (data as any)._meta?.message) || 'Failed to load admin dashboard'
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-red-400">
+        {'Failed to load admin dashboard: ' + errMsg}
+      </div>
+    )
   }
 
   const selectedAffiliateForDeduction = deductionForm.affiliateId

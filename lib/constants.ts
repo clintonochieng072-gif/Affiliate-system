@@ -13,4 +13,4 @@ export const PLAN_PRICES: Record<string, number> = {
 }
 
 /** Minimum withdrawal amount (KES) */
-export const MIN_WITHDRAWAL_AMOUNT = 600
+export const MIN_WITHDRAWAL_AMOUNT = 100
