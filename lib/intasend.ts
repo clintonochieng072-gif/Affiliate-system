@@ -1,4 +1,6 @@
-const INTASEND_BASE_URL = 'https://api.intasend.com/api/v1/payouts/'
+const INTASEND_BASE_URL = process.env.INTASEND_ENV === 'sandbox'
+  ? 'https://sandbox.intasend.com/api/v1/send-money/initiate/'
+  : 'https://api.intasend.com/api/v1/send-money/initiate/'
 const INTASEND_SECRET_KEY = process.env.INTASEND_SECRET_KEY
 
 export interface IntaSendPayoutResponse {
@@ -34,6 +36,7 @@ export async function sendIntaSendPayout(amount: number, phoneNumber: string): P
     currency: 'KES',
     amount,
     phone_number: phoneNumber,
+    provider: 'M-PESA',
   }
 
   const response = await fetch(INTASEND_BASE_URL, {
@@ -45,19 +48,25 @@ export async function sendIntaSendPayout(amount: number, phoneNumber: string): P
     body: JSON.stringify(requestBody),
   })
 
-  const raw = await response.json().catch(() => null)
+  const raw = await response.text() // Get text first
+  let parsedRaw: any
+  try {
+    parsedRaw = JSON.parse(raw)
+  } catch {
+    parsedRaw = { rawResponse: raw }
+  }
 
   if (!response.ok) {
-    const message = raw?.message || raw?.error || `IntaSend request failed with status ${response.status}`
+    const message = parsedRaw?.message || parsedRaw?.error || `IntaSend request failed with status ${response.status}`
     throw new Error(`IntaSend payout error: ${message}`)
   }
 
-  const transactionId = String(raw?.transaction_id || raw?.id || '')
-  const status = String(raw?.status || raw?.status_code || 'unknown')
+  const transactionId = String(parsedRaw?.transaction_id || parsedRaw?.id || '')
+  const status = String(parsedRaw?.status || parsedRaw?.status_code || 'unknown')
 
   return {
     transactionId,
     status,
-    raw,
+    raw: parsedRaw,
   }
 }
